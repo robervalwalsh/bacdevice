@@ -12,10 +12,16 @@
 ## Software dependencies:
 * python 3.4 or newer
 * [bacpypes](https://github.com/JoelBender/bacpypes) 0.16
+* PyQt5
 
 ### Install bacpypes
 ```
 pip3 install bacpypes==0.16
+```
+
+### Install PyQt5
+```
+apt-get install python3-pyqt5
 ```
 
 ## How to run

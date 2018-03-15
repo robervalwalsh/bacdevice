@@ -3,6 +3,7 @@
 import submeter
 import socket
 import threading
+from PyQt5.QtCore import QByteArray, QDataStream, QIODevice
 
 class PumpstationMeter(submeter.SubMeter):
     def __init__(self, name, pumpstation):
@@ -71,12 +72,12 @@ class Pumpstation(threading.Thread):
             self._stop_event.wait(self.SLEEP_TIME)
                 
     def _updatePressures(self):    
-        values = self._do_command("getVacuumStatus", [int]*3 + [float]*3)
-        statuses = values[:3]
-        values = values[3:]
+        values = self._do_command("getVacuumStatus", [int, float] * 3)
+        statuses = values[::2]
+        values = values[1::2]
             
-        for i, press in enumerate(self._press):
-            press.is_connected = status[i] == 1
+        for i, press in enumerate(self.press):
+            press.is_connected = statuses[i] == 1
             press.present_value = values[i]
             
     def _updateSwitches(self):            
@@ -86,7 +87,7 @@ class Pumpstation(threading.Thread):
             switch.is_connected = True
             switch.present_value = values[i]
             
-    def _updateSwitches(self):
+    def _updatePumps(self):
         values = self._do_command("getPumpOperatingHours", [float]*2)
             
         for i, pump in enumerate(self.pumps):
@@ -108,7 +109,7 @@ class Pumpstation(threading.Thread):
         try:
             values = [types[i](val) for i, val in enumerate(values)]
         except ValueError as e:
-            raise PumpstationError(self.name, self.host, self.port, "Invalid value in response") from e
+            raise PumpstationError(self.name, self.host, self.port, "Invalid value in response: {}".format(e.args[0])) from e
             
         return values
         
@@ -121,11 +122,14 @@ class Pumpstation(threading.Thread):
         return s
                     
     def _sendCommand(self, socket, command):
-        data = len(command).to_bytes(2, "little")
-        data += bytes(command, "utf-8")
-        data += b"\0"
+        blocksize = len(command)
+        block = QByteArray()
+        stream = QDataStream(block, QIODevice.WriteOnly)
+        stream.setVersion(QDataStream.Qt_4_0)
+        stream.writeUInt16(blocksize)
+        stream.writeQString(command)
         
-        socket.sendall(data)
+        socket.sendall(bytes(block))
             
     def _recvResponse(self, socket):
         data = b""
@@ -134,8 +138,12 @@ class Pumpstation(threading.Thread):
             if len(new_data) == 0:
                 break
             data += new_data
-        blocksize = int.from_bytes(data[:2], "little")
-        resp = data[2:-1].decode("utf-8")
+        
+        block = QByteArray(data)
+        stream = QDataStream(block)
+        stream.setVersion(QDataStream.Qt_4_0)
+        blocksize = stream.readUInt16()
+        resp = stream.readQString()
         
         return resp
         
