@@ -61,17 +61,17 @@ if __name__ == "__main__":
         exit(1)
 
     device_info = {
-        "ip": cparser["server"]["ip"],
-        "netmask": 23,
-        "port": cparser["server"]["port"],
-        "objectName": cparser["server"]["objectName"],
-        "objectIdentifier": getnode() >> (48 - 22),
-        "vendorIdentifier": cparser["server"]["vendorIdentifier"],
-        "location": cparser["server"]["location"],
-        "vendorName": cparser["server"]["vendorName"],
-        "modelName": cparser["server"]["modelName"],
-        "softwareVersion": "bacpypes_{}_python{}.{}.{}".format(bacpypes_version, version_info[0], version_info[1], version_info[2]),
-        "description": cparser["server"]["description"]
+        'ip': cparser["server"]["ip"],
+        'netmask': 23,
+        'port': cparser["server"]["port"],
+        'objectName': cparser["server"]["objectName"],
+        'objectIdentifier': 522020,
+        'vendorIdentifier': int (cparser["server"]["vendorIdentifier"]),
+        'location': cparser["server"]["location"],
+        'vendorName': cparser["server"]["vendorName"],
+        'modelName': cparser["server"]["modelName"],
+        'softwareVersion': "bacpypes_{}_python{}.{}.{}".format(bacpypes_version, version_info[0], version_info[1], version_info[2]),
+        'description': cparser["server"]["description"]
     }
 
     print (device_info)
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     this_device._values['applicationSoftwareVersion'] = CharacterString(device_info['softwareVersion'])
     this_device._values['description'] = CharacterString(device_info['description'])
 
-    this_addr = "{}/{}:{}".format(device_info["ip"], device_info["netmask"], device_info["port"])
+    this_addr = str(device_info['ip']+'/'+str(device_info['netmask'])+':'+str(device_info['port']))
     print("bacnet server will listen at {}".format(this_addr))
     this_application = BIPSimpleApplication(this_device, this_addr)
     this_application.add_capability(ReadWritePropertyMultipleServices)
