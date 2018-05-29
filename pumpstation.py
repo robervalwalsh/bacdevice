@@ -109,7 +109,7 @@ class Pumpstation(threading.Thread):
         try:
             values = [types[i](val) for i, val in enumerate(values)]
         except ValueError as e:
-            raise PumpstationError(self.name, self.host, self.port, "Invalid value in response: {}".format(e.args[0])) from e
+            raise PumpstationError(self.name, self.host, self.port, "Invalid value in response: {} at {}".format(e.args[0],datetime.now())) from e
             
         return values
         
@@ -118,7 +118,7 @@ class Pumpstation(threading.Thread):
         s.settimeout(self.SOCKET_TIMEOUT)
         if s.connect_ex((self.host, self.port)) != 0:
             s.close()
-            raise PumpstationError(self.name, self.host, self.port, "Could not connect.")
+            raise PumpstationError(self.name, self.host, self.port, "Could not connect at {}".format(datetime.now()))
         return s
                     
     def _sendCommand(self, socket, command):
