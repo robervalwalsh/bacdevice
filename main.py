@@ -28,7 +28,7 @@ class DataThread(threading.Thread):
         self.meters = meters
         self.objs = objs
         self.flag_stop = False
-    
+
     def run(self):
         while not self.flag_stop:
             time.sleep(1)
@@ -38,7 +38,7 @@ class DataThread(threading.Thread):
                     if meter.name == objname:
                         obj._values["outOfService"] = Boolean(not meter.is_connected)
                         obj._values["presentValue"] = Real(meter.getPresentValue())
-                        
+
     def stop(self):
         self.flag_stop = True
 
@@ -46,25 +46,23 @@ if __name__ == "__main__":
     if not path.exists("server.cfg"):
         print("Error: File server.cfg not found.")
         exit(1)
-    
+
     cparser = configparser.ConfigParser()
     cparser.read("server.cfg")
-    
+
     if not "server" in cparser:
         print("Invalid config: No server section")
         exit(1)
-    
-    required_keys = {"ip", "port", "objectname", "vendoridentifier",
-        "location", "vendorname", "modelname", "description"}
+
+    required_keys = {"ip", "port", "objectname", "vendoridentifier", "location", "vendorname", "modelname", "description"}
     missing_keys = required_keys - set(cparser["server"].keys())
     if len(missing_keys) != 0:
-        print("Missing config keys in server section: "
-            + (" ".join(missing_keys)))
+        print("Missing config keys in server section: " + (" ".join(missing_keys)))
         exit(1)
 
     device_info = {
         "ip": cparser["server"]["ip"],
-        "netmask": 24,
+        "netmask": 23,
         "port": cparser["server"]["port"],
         "objectName": cparser["server"]["objectName"],
         "objectIdentifier": getnode() >> (48 - 22),
@@ -75,25 +73,27 @@ if __name__ == "__main__":
         "softwareVersion": "bacpypes_{}_python{}.{}.{}".format(bacpypes_version, version_info[0], version_info[1], version_info[2]),
         "description": cparser["server"]["description"]
     }
-    
+
+    print (device_info)
+
     this_device = LocalDeviceObject(
         objectName=device_info["objectName"],
         objectIdentifier=device_info["objectIdentifier"],
         vendorIdentifier=device_info["vendorIdentifier"]
     )
-    
-    this_device._values["location"] = CharacterString(device_info["location"])
-    this_device._values["vendorName"] = CharacterString(device_info["vendorName"])
-    this_device._values["modelName"] = CharacterString(device_info["modelName"])
-    this_device._values["applicationSoftwareVersion"] = CharacterString(device_info["softwareVersion"])
-    this_device._values["description"] = CharacterString(device_info["description"])
-    
+
+    this_device._values['location'] = CharacterString(device_info['location'])
+    this_device._values['vendorName'] = CharacterString(device_info['vendorName'])
+    this_device._values['modelName'] = CharacterString(device_info['modelName'])
+    this_device._values['applicationSoftwareVersion'] = CharacterString(device_info['softwareVersion'])
+    this_device._values['description'] = CharacterString(device_info['description'])
+
     this_addr = "{}/{}:{}".format(device_info["ip"], device_info["netmask"], device_info["port"])
     print("bacnet server will listen at {}".format(this_addr))
     this_application = BIPSimpleApplication(this_device, this_addr)
     this_application.add_capability(ReadWritePropertyMultipleServices)
     this_device.protocolServicesSupported = this_application.get_services_supported().value
-    
+
     meters_active = []
     ai_objs = []
     idx = 1
