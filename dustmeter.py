@@ -4,7 +4,7 @@ import submeter
 import socket
 import threading
 import select
-from time import sleep, time
+import time
 from datetime import datetime
 from PyQt5.QtCore import QByteArray, QDataStream, QIODevice
 

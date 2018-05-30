@@ -40,7 +40,7 @@ class Pumpstation(threading.Thread):
                 kwargs[attr] = value
         self.name = kwargs["name"]
         self.host = kwargs["host"]
-        print("Initiating {} at {}:{}".format(self.name, self.host, self.port))
+        print("Initiating {} at {}:{}".format(self.name, self.host, int(kwargs["port"])))
         try:
             self.port = int(kwargs["port"])
         except ValueError:

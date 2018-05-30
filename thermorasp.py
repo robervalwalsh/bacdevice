@@ -80,7 +80,7 @@ class TermoRasp(threading.Thread):
                     reading = float(readings[i])
                 except ValueError:
                     self.meters[name].is_connected = False
-                    print("Invalid or empty value for {} of {} at {}:{}".format(name, self.name, self.host, self.port))
+                    #print("Invalid or empty value for {} of {} at {}:{}".format(name, self.name, self.host, self.port))
                     continue
                 self.meters[name].present_value = reading
                 self.meters[name].is_connected = True
