@@ -39,9 +39,7 @@ class Dustmeter(threading.Thread):
         self.host = kwargs["host"]
         self.port = kwargs["port"]
         self.reconnect = kwargs["reconnect"]
-        #self.dust_small = kwargs["default_dust"]
-        self.dust_small = [DustmeterMeter("dust_small", self)]
-        self.dust_large = [DustmeterMeter("dust_large", self)]
+        self.dustvalues = [DustmeterMeter("dust_small", self), DustmeterMeter("dust_large", self)]
         #self.dust_large = kwargs["default_dust"]
         self.is_connected = False
         self.ev = threading.Event()
@@ -61,8 +59,9 @@ class Dustmeter(threading.Thread):
                     continue
                 else:
                     print (self.name, '#', 'no connection, stop')
-                    self.dust_small = DustMeter.defaultProps['default_dust']
-                    self.dust_large = DustMeter.defaultProps['default_dust']
+                    for i, dusts in enumerate(self.dustvalues):
+                        dusts.is_connected = False
+                        dusts.present_value = DustMeter.defaultProps['default_dust']
                     s.close()
                     break
             inout = [s]
@@ -74,25 +73,33 @@ class Dustmeter(threading.Thread):
                     buf = s.recv(64)
                     if len(buf) != 0:
                         idel_loop_count = 0;
-                        [small_str, large_str] = buf.split(',')
-                        self.dust_small=int(small_str)
-                        self.dust_large=int(large_str)
-                        print (self.name, '#', 'receive data:', repr(buf))
+                        [small_str, large_str] = buf.split(b',')
+                        smalldst = int(small_str)
+                        largedst = int(large_str)
+                        #print (self.name, '#', 'receive data:', repr(buf))
+                        for i, dusts in enumerate(self.dustvalues):
+                            dusts.is_connected = True
+                            if (i==0):
+                                dusts.present_value = smalldst
+                            if (i==1):
+                                dusts.present_value = largedst
+
+
                 if self.ev.wait(30):
                     self.ev.clear()
                     print (self.name, '#', 'close connection by user')
-                    self.dust_small = DustMeter.defaultProps['default_dust']
-                    self.dust_large = DustMeter.defaultProps['default_dust']
-                    self.is_connected = False
+                    for i, dusts in enumerate(self.dustvalues):
+                        dusts.is_connected = False
+                        dusts.present_value = DustMeter.defaultProps['default_dust']
                     s.close()
                     return
                 else:
                     idel_loop_count += 1
                     if(idel_loop_count > 4):
                         print (self.name, '#','no incoming data, closing connection')
-                        self.dust_small = DustMeter.defaultProps['default_dust']
-                        self.dust_large = DustMeter.defaultProps['default_dust']
-                        self.is_connected = False
+                        for i, dusts in enumerate(self.dustvalues):
+                            dusts.is_connected = False
+                            dusts.present_value = DustMeter.defaultProps['default_dust']
                         s.close()
                         break
 
@@ -101,7 +108,7 @@ class Dustmeter(threading.Thread):
 
 def getMeters(config):
     dust = Dustmeter(**config)
-    return dust.dust_small + dust.dust_large
+    return dust.dustvalues
 
 if __name__ == "__main__":
     pass
