@@ -18,12 +18,12 @@ class TermoRasp(threading.Thread):
         "host": "localhost",
         "port": 50007,
     }
-    
+
     SLEEP_TIME = 1 #seconds to sleep after refresh
     MAX_REFRESH_TIME = 600 #seconds after which the sensors will be
                         #deemed disconnected if there was no timestamp change
     SOCKET_TIMEOUT = 5 #seconds to wait for socket
-    
+
     def __init__(self, **kwargs):
         threading.Thread.__init__(self)
         for attr, value in TermoRasp.defaultProps.items():
@@ -33,7 +33,7 @@ class TermoRasp(threading.Thread):
         self.host = kwargs["host"]
         self._stop_event = threading.Event()
         self.meters = {}
-        
+
         try:
             self.port = int(kwargs["port"])
         except ValueError:
@@ -48,15 +48,15 @@ class TermoRasp(threading.Thread):
         lines = r.split("\n")
         fields = lines[0].split()
         meter_names = fields[2:]
-        
+
         if len(lines) < 2:
             print("Invalid reply from ThermoRasp at {}:{} at {}".format(self.host, self.port, datetime.now()))
             return
         self._ts_offset = time() - self._parseTimestamp(lines[1])
-        
+
         for name in meter_names:
             self.meters[name] = ThermoRaspMeter(name, self)
-        
+
     def run(self):
         while not self._stop_event.is_set():
             #print("Refreshing ThermoRasp values")
@@ -74,7 +74,7 @@ class TermoRasp(threading.Thread):
                 continue
             fields = lines[0].split()
             meter_names = fields[2:]
-            
+
             readings = lines[1].split(" ")[2:]
             for i, name in enumerate(meter_names):
                 try:
@@ -85,15 +85,15 @@ class TermoRasp(threading.Thread):
                     continue
                 self.meters[name].present_value = reading
                 self.meters[name].is_connected = True
-                
+
             if abs(time() - self._parseTimestamp(lines[1]) - self._ts_offset) > self.MAX_REFRESH_TIME:
                 self._setAllIsConnStatus(False)
-                
+
             sleep(self.SLEEP_TIME)
-                
+
     def stop(self):
         self._stop_event.set()
-        
+
     def getReadings(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(self.SOCKET_TIMEOUT)
@@ -107,7 +107,7 @@ class TermoRasp(threading.Thread):
             data += new_data
         s.close()
         return data.decode("utf-8")
-        
+
     def _parseTimestamp(self, date_str):
         if re.match("\\d+-\\d+-\\d+T\\d+:\\d+:\\d+\\.\\d+", date_str):
             return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f").timestamp()
@@ -115,7 +115,7 @@ class TermoRasp(threading.Thread):
             return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S").timestamp()
         else:
             return 0
-        
+
     def _setAllIsConnStatus(self, status):
         for name, meter in self.meters.items():
             meter.is_connected = status
@@ -123,6 +123,6 @@ class TermoRasp(threading.Thread):
 def getMeters(config):
     thermorasp = TermoRasp(**config)
     return list(thermorasp.meters.values())
-    
+
 if __name__ == "__main__":
     print(getMeters({"host": "fhlthermorasp", "port": 50007}))

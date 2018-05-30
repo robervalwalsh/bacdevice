@@ -108,14 +108,14 @@ if __name__ == "__main__":
             print("Missing config sections for meters: "
                 + "".join(missing_metersections))
             exit(1)
-            
+
         for metersection in metersections:
             info = cparser[metersection]
-            
+
             ms = metermodule.getMeters(info)
             print("Got {} meter(s) from {}".format(len(ms), metersection))
             meters_active.extend(ms)
-            
+
             for m in ms:
                 m.name = "{}_{}".format(metersection, m.name)
                 ai_obj = AnalogInputObject(objectIdentifier=("analogInput", idx), objectName=m.name)
@@ -142,20 +142,20 @@ if __name__ == "__main__":
                     ai_obj._values["resolution"] = Real(resolution)
                 this_application.add_object(ai_obj)
                 ai_objs.append(ai_obj)
-                
+
                 idx += 1
-            
+
     for m in meters_active:
         m.start()
-    
+
     datathread = DataThread(meters_active, ai_objs)
     datathread.start()
-    
+
     bacpypesrun()
-    
+
     datathread.stop()
     datathread.join()
-    
+
     for m in meters_active:
         m.stop()
         m.join()
