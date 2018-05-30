@@ -3,6 +3,8 @@
 import submeter
 import socket
 import threading
+from time import sleep, time
+from datetime import datetime
 from PyQt5.QtCore import QByteArray, QDataStream, QIODevice
 
 class PumpstationMeter(submeter.SubMeter):
@@ -38,6 +40,7 @@ class Pumpstation(threading.Thread):
                 kwargs[attr] = value
         self.name = kwargs["name"]
         self.host = kwargs["host"]
+        print("Initiating {} at {}:{}".format(self.name, self.host, self.port))
         try:
             self.port = int(kwargs["port"])
         except ValueError:

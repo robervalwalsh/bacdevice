@@ -4,7 +4,8 @@ import submeter
 import socket
 import threading
 import select
-import time
+from time import sleep, time
+from datetime import datetime
 from PyQt5.QtCore import QByteArray, QDataStream, QIODevice
 
 class DustmeterMeter(submeter.SubMeter):
@@ -43,22 +44,23 @@ class Dustmeter(threading.Thread):
         #self.dust_large = kwargs["default_dust"]
         self.is_connected = False
         self.ev = threading.Event()
+        print("Initiating {} at {}:{}".format(self.name, self.host, self.port))
 
     def run(self):
         while True:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             if s.connect_ex((self.host, self.port)) == 0:
                 self.is_connected = True
-                print (self.name, '#', self.host+':'+str(self.port), 'is connected!')
+                print("Connected {} at {}:{}".format(self.name, self.host, self.port))
             else:
                 self.is_connected = False
-                print (self.name, '#', self.host+':'+str(self.port), 'is unreachable!')
+                print("No reply from {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                 if self.reconnect:
-                    print (self.name, '#', 'reconnect later')
+                    print("Reconnected to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                     time.sleep(30)
                     continue
                 else:
-                    print (self.name, '#', 'no connection, stop')
+                    print("Failed to reconnect to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                     for i, dusts in enumerate(self.dustvalues):
                         dusts.is_connected = False
                         dusts.present_value = DustMeter.defaultProps['default_dust']
@@ -87,7 +89,7 @@ class Dustmeter(threading.Thread):
 
                 if self.ev.wait(30):
                     self.ev.clear()
-                    print (self.name, '#', 'close connection by user')
+                    print("Closed connection to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                     for i, dusts in enumerate(self.dustvalues):
                         dusts.is_connected = False
                         dusts.present_value = DustMeter.defaultProps['default_dust']
@@ -96,7 +98,7 @@ class Dustmeter(threading.Thread):
                 else:
                     idel_loop_count += 1
                     if(idel_loop_count > 4):
-                        print (self.name, '#','no incoming data, closing connection')
+                        print("No data, closing connection to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                         for i, dusts in enumerate(self.dustvalues):
                             dusts.is_connected = False
                             dusts.present_value = DustMeter.defaultProps['default_dust']

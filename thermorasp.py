@@ -40,17 +40,17 @@ class TermoRasp(threading.Thread):
             print("Invalid port " + kwargs["port"])
             return
 
-        #print("Initiating ThermoRasp at {}:{}".format(self.host, self.port))
+        print("Initiating {} at {}:{}".format(self.name, self.host, self.port))
         r = self.getReadings()
         if not r:
-            print("Failed to connect to ThermoRasp at {}:{} at {}".format(self.host, self.port, datetime.now()))
+            print("Failed to connect to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
             return
         lines = r.split("\n")
         fields = lines[0].split()
         meter_names = fields[2:]
 
         if len(lines) < 2:
-            print("Invalid reply from ThermoRasp at {}:{} at {}".format(self.host, self.port, datetime.now()))
+            print("Invalid reply from {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
             return
         self._ts_offset = time() - self._parseTimestamp(lines[1])
 
@@ -59,16 +59,15 @@ class TermoRasp(threading.Thread):
 
     def run(self):
         while not self._stop_event.is_set():
-            #print("Refreshing ThermoRasp values")
             r = self.getReadings()
             if not r:
-                print("No reply from ThermoRasp at {}:{} at {}".format(self.host, self.port, datetime.now()))
+                print("No reply from {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                 self._setAllIsConnStatus(False)
                 sleep(self.SLEEP_TIME)
                 continue
             lines = r.split("\n")
             if len(lines) < 2:
-                print("Invalid reply from ThermoRasp at {}:{} at {}".format(self.host, self.port, datetime.now()))
+                print("Invalid reply from {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                 self._setAllIsConnStatus(False)
                 sleep(self.SLEEP_TIME)
                 continue
@@ -81,7 +80,7 @@ class TermoRasp(threading.Thread):
                     reading = float(readings[i])
                 except ValueError:
                     self.meters[name].is_connected = False
-                    #print("Invalid or empty value for {} of ThermoRasp at {}:{}".format(name, self.host, self.port))
+                    print("Invalid or empty value for {} of {} at {}:{}".format(name, self.name, self.host, self.port))
                     continue
                 self.meters[name].present_value = reading
                 self.meters[name].is_connected = True
