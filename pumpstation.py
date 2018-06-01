@@ -84,11 +84,12 @@ class Pumpstation(threading.Thread):
             press.present_value = values[i]
 
     def _updateSwitches(self):
-        values = self._do_command("getSwitchStatus", [bool]*5)
+        values = self._do_command("getSwitchStatus", [int]*5)
 
         for i, switch in enumerate(self.switches):
             switch.is_connected = True
             switch.present_value = values[i]
+            #print ("switch {} status {}".format(i, values[i]))
 
     def _updatePumps(self):
         values = self._do_command("getPumpOperatingHours", [float]*2)
