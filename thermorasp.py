@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 
 import logging
+logger = logging.getLogger('mybaclog')
 import threading
 import socket
 from time import sleep, time
@@ -38,20 +39,20 @@ class TermoRasp(threading.Thread):
         try:
             self.port = int(kwargs["port"])
         except ValueError:
-            logging.error("Invalid port " + kwargs["port"])
+            logger.error("Invalid port " + kwargs["port"])
             return
 
-        logging.info("Initiating {} at {}:{}".format(self.name, self.host, self.port))
+        logger.info("Initiating {} at {}:{}".format(self.name, self.host, self.port))
         r = self.getReadings()
         if not r:
-            logging.error("Failed to connect to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
+            logger.error("Failed to connect to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
             return
         lines = r.split("\n")
         fields = lines[0].split()
         meter_names = fields[2:]
 
         if len(lines) < 2:
-            logging.warning("Invalid reply from {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
+            logger.warning("Invalid reply from {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
             return
         self._ts_offset = time() - self._parseTimestamp(lines[1])
 
@@ -62,7 +63,7 @@ class TermoRasp(threading.Thread):
         while not self._stop_event.is_set():
             r = self.getReadings()
             if not r:
-                logging.warning("No reply from {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
+                logger.warning("No reply from {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                 self._setAllIsConnStatus(False)
                 sleep(self.SLEEP_TIME)
                 continue
@@ -81,11 +82,11 @@ class TermoRasp(threading.Thread):
                     reading = float(readings[i])
                 except ValueError:
                     self.meters[name].is_connected = False
-                    logging.debug("Invalid or empty value for {} of {} at {}:{}".format(name, self.name, self.host, self.port))
+                    logger.debug("Invalid or empty value for {} of {} at {}:{}".format(name, self.name, self.host, self.port))
                     continue
                 self.meters[name].present_value = reading
                 self.meters[name].is_connected = True
-                logging.debug("Data from {} at {}:{} at {} is: {}: {}".format(self.name, self.host, self.port, datetime.now(), name, reading))
+                logger.debug("Data from {} at {}:{} at {} is: {}: {}".format(self.name, self.host, self.port, datetime.now(), name, reading))
 
             if abs(time() - self._parseTimestamp(lines[1]) - self._ts_offset) > self.MAX_REFRESH_TIME:
                 self._setAllIsConnStatus(False)

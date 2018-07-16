@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
+logger = logging.getLogger('mybaclog')
 import submeter
 import socket
 import threading
@@ -41,11 +42,11 @@ class Pumpstation(threading.Thread):
                 kwargs[attr] = value
         self.name = kwargs["name"]
         self.host = kwargs["host"]
-        logging.info("Initiating {} at {}:{}".format(self.name, self.host, int(kwargs["port"])))
+        logger.info("Initiating {} at {}:{}".format(self.name, self.host, int(kwargs["port"])))
         try:
             self.port = int(kwargs["port"])
         except ValueError:
-            logging.error("Invalid port " + kwargs["port"])
+            logger.error("Invalid port " + kwargs["port"])
             return
         self.reconnect = kwargs['reconnect']
         self._stop_event = threading.Event()
@@ -83,7 +84,7 @@ class Pumpstation(threading.Thread):
         for i, press in enumerate(self.press):
             press.is_connected = statuses[i] == 1
             press.present_value = values[i]
-            logging.debug("Data from {} at {}:{} at {} is: {}: {}".format(self.name, self.host, self.port, datetime.now(), self.press[i].name, values[i]))
+            logger.debug("Data from {} at {}:{} at {} is: {}: {}".format(self.name, self.host, self.port, datetime.now(), self.press[i].name, values[i]))
 
     def _updateSwitches(self):
         values = self._do_command("getSwitchStatus", [int]*5)
@@ -91,7 +92,7 @@ class Pumpstation(threading.Thread):
         for i, switch in enumerate(self.switches):
             switch.is_connected = True
             switch.present_value = values[i]
-            logging.debug("Data from {} at {}:{} at {} is: {}: {}".format(self.name, self.host, self.port, datetime.now(), self.switches[i].name, values[i]))
+            logger.debug("Data from {} at {}:{} at {} is: {}: {}".format(self.name, self.host, self.port, datetime.now(), self.switches[i].name, values[i]))
 
     def _updatePumps(self):
         values = self._do_command("getPumpOperatingHours", [float]*2)
@@ -99,7 +100,7 @@ class Pumpstation(threading.Thread):
         for i, pump in enumerate(self.pumps):
             pump.is_connected = True
             pump.present_value = values[i]
-            logging.debug("Data from {} at {}:{} at {} is: {}: {}".format(self.name, self.host, self.port, datetime.now(), self.pumps[i].name, values[i]))
+            logger.debug("Data from {} at {}:{} at {} is: {}: {}".format(self.name, self.host, self.port, datetime.now(), self.pumps[i].name, values[i]))
 
     def _do_command(self, command, types):
         s = self._openSocket()
