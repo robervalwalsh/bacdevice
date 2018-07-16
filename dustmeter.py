@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import logging
 import submeter
 import socket
 import threading
@@ -41,26 +42,25 @@ class Dustmeter(threading.Thread):
         self.port = kwargs["port"]
         self.reconnect = kwargs["reconnect"]
         self.dustvalues = [DustmeterMeter("dust_small", self), DustmeterMeter("dust_large", self)]
-        #self.dust_large = kwargs["default_dust"]
         self.is_connected = False
         self.ev = threading.Event()
-        print("Initiating {} at {}:{}".format(self.name, self.host, self.port))
+        logging.info("Initiating {} at {}:{}".format(self.name, self.host, self.port))
 
     def run(self):
         while True:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             if s.connect_ex((self.host, self.port)) == 0:
                 self.is_connected = True
-                print("Connected {} at {}:{}".format(self.name, self.host, self.port))
+                logging.info("Connected {} at {}:{}".format(self.name, self.host, self.port))
             else:
                 self.is_connected = False
-                print("No reply from {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
+                logging.warning("No reply from {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                 if self.reconnect:
-                    print("Reconnected to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
+                    logging.warning("Reconnected to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                     time.sleep(30)
                     continue
                 else:
-                    print("Failed to reconnect to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
+                    logging.error("Failed to reconnect to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                     for i, dusts in enumerate(self.dustvalues):
                         dusts.is_connected = False
                         dusts.present_value = DustMeter.defaultProps['default_dust']
@@ -78,7 +78,13 @@ class Dustmeter(threading.Thread):
                         [small_str, large_str] = buf.split(b',')
                         smalldst = int(small_str)
                         largedst = int(large_str)
-                        #print (self.name, '#', 'receive data:', repr(buf))
+                        #
+                        #
+                        #
+                        logging.debug("Data from {} at {}:{} at {} is: {}, {}".format(self.name, self.host, self.port, datetime.now(), smalldst, largedst))
+                        #
+                        #
+                        #
                         for i, dusts in enumerate(self.dustvalues):
                             dusts.is_connected = True
                             if (i==0):
@@ -89,7 +95,7 @@ class Dustmeter(threading.Thread):
 
                 if self.ev.wait(30):
                     self.ev.clear()
-                    print("Closed connection to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
+                    logging.info("Closed connection to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                     for i, dusts in enumerate(self.dustvalues):
                         dusts.is_connected = False
                         dusts.present_value = DustMeter.defaultProps['default_dust']
@@ -98,7 +104,7 @@ class Dustmeter(threading.Thread):
                 else:
                     idel_loop_count += 1
                     if(idel_loop_count > 4):
-                        print("No data, closing connection to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
+                        logging.info("No data, closing connection to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                         for i, dusts in enumerate(self.dustvalues):
                             dusts.is_connected = False
                             dusts.present_value = DustMeter.defaultProps['default_dust']

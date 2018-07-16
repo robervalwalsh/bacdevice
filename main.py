@@ -19,6 +19,7 @@ from bacpypes.service.object import ReadWritePropertyMultipleServices
 import dustmeter
 import thermorasp
 import pumpstation
+import logging
 METERS = {"dustmeters": dustmeter, "thermorasps": thermorasp, "pumpstations": pumpstation}
 
 class DataThread(threading.Thread):
@@ -42,7 +43,16 @@ class DataThread(threading.Thread):
     def stop(self):
         self.flag_stop = True
 
-if __name__ == "__main__":
+def main():
+    #logger = logging.getLogger(__name__)
+    #logger.setLevel(10)
+    logging.basicConfig(filename="/home/cleangat/bacdevice/example.log",level=logging.DEBUG)
+    logging.info('info')
+
+    logging.debug('debug')
+    logging.warning('warn')
+    logging.error('error')
+
     if not path.exists("server.cfg"):
         print("Error: File server.cfg not found.")
         exit(1)
@@ -75,6 +85,13 @@ if __name__ == "__main__":
     }
 
     print (device_info)
+
+    if cparser.getboolean("server","verbose"):
+        print ("Verbosity is on!")
+        global verbose
+        verbose = True
+        print ("verb is ", verbose)
+
 
     this_device = LocalDeviceObject(
         objectName=device_info["objectName"],
@@ -145,6 +162,8 @@ if __name__ == "__main__":
 
                 idx += 1
 
+    logging.error("test")
+
     for m in meters_active:
         m.start()
 
@@ -159,3 +178,7 @@ if __name__ == "__main__":
     for m in meters_active:
         m.stop()
         m.join()
+
+
+if __name__ == "__main__":
+    main()

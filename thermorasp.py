@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 
+import logging
 import threading
 import socket
 from time import sleep, time
@@ -19,10 +20,10 @@ class TermoRasp(threading.Thread):
         "port": 50007,
     }
 
-    SLEEP_TIME = 1 #seconds to sleep after refresh
+    SLEEP_TIME = 5 #seconds to sleep after refresh
     MAX_REFRESH_TIME = 600 #seconds after which the sensors will be
                         #deemed disconnected if there was no timestamp change
-    SOCKET_TIMEOUT = 5 #seconds to wait for socket
+    SOCKET_TIMEOUT = 10 #seconds to wait for socket
 
     def __init__(self, **kwargs):
         threading.Thread.__init__(self)
@@ -37,20 +38,20 @@ class TermoRasp(threading.Thread):
         try:
             self.port = int(kwargs["port"])
         except ValueError:
-            print("Invalid port " + kwargs["port"])
+            logging.error("Invalid port " + kwargs["port"])
             return
 
-        print("Initiating {} at {}:{}".format(self.name, self.host, self.port))
+        logging.info("Initiating {} at {}:{}".format(self.name, self.host, self.port))
         r = self.getReadings()
         if not r:
-            print("Failed to connect to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
+            logging.error("Failed to connect to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
             return
         lines = r.split("\n")
         fields = lines[0].split()
         meter_names = fields[2:]
 
         if len(lines) < 2:
-            print("Invalid reply from {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
+            logging.warning("Invalid reply from {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
             return
         self._ts_offset = time() - self._parseTimestamp(lines[1])
 
@@ -61,7 +62,7 @@ class TermoRasp(threading.Thread):
         while not self._stop_event.is_set():
             r = self.getReadings()
             if not r:
-                print("No reply from {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
+                logging.warning("No reply from {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                 self._setAllIsConnStatus(False)
                 sleep(self.SLEEP_TIME)
                 continue
@@ -80,10 +81,11 @@ class TermoRasp(threading.Thread):
                     reading = float(readings[i])
                 except ValueError:
                     self.meters[name].is_connected = False
-                    #print("Invalid or empty value for {} of {} at {}:{}".format(name, self.name, self.host, self.port))
+                    logging.debug("Invalid or empty value for {} of {} at {}:{}".format(name, self.name, self.host, self.port))
                     continue
                 self.meters[name].present_value = reading
                 self.meters[name].is_connected = True
+                logging.debug("Data from {} at {}:{} at {} is: {}: {}".format(self.name, self.host, self.port, datetime.now(), name, reading))
 
             if abs(time() - self._parseTimestamp(lines[1]) - self._ts_offset) > self.MAX_REFRESH_TIME:
                 self._setAllIsConnStatus(False)
