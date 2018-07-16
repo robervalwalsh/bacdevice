@@ -86,13 +86,6 @@ def main():
 
     print (device_info)
 
-    if cparser.getboolean("server","verbose"):
-        print ("Verbosity is on!")
-        global verbose
-        verbose = True
-        print ("verb is ", verbose)
-
-
     this_device = LocalDeviceObject(
         objectName=device_info["objectName"],
         objectIdentifier=device_info["objectIdentifier"],
