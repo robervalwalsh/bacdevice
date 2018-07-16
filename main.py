@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+import logging
+logger = logging.getLogger('mybaclog')
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler('output.log')
+fh.setLevel(logging.DEBUG)
+logger.addHandler(fh)
+
 import configparser
 from sys import exit, version_info
 import threading
@@ -19,7 +26,6 @@ from bacpypes.service.object import ReadWritePropertyMultipleServices
 import dustmeter
 import thermorasp
 import pumpstation
-import logging
 METERS = {"dustmeters": dustmeter, "thermorasps": thermorasp, "pumpstations": pumpstation}
 
 class DataThread(threading.Thread):
@@ -46,12 +52,12 @@ class DataThread(threading.Thread):
 def main():
     #logger = logging.getLogger(__name__)
     #logger.setLevel(10)
-    logging.basicConfig(filename="/home/cleangat/bacdevice/example.log",level=logging.DEBUG)
-    logging.info('info')
 
-    logging.debug('debug')
-    logging.warning('warn')
-    logging.error('error')
+    logger.info('info')
+
+    logger.debug('debug')
+    logger.warning('warn')
+    logger.error('error')
 
     if not path.exists("server.cfg"):
         print("Error: File server.cfg not found.")
@@ -155,7 +161,7 @@ def main():
 
                 idx += 1
 
-    logging.error("test")
+    logger.error("test")
 
     for m in meters_active:
         m.start()
