@@ -50,14 +50,6 @@ class DataThread(threading.Thread):
         self.flag_stop = True
 
 def main():
-    #logger = logging.getLogger(__name__)
-    #logger.setLevel(10)
-
-    logger.info('info')
-
-    logger.debug('debug')
-    logger.warning('warn')
-    logger.error('error')
 
     if not path.exists("server.cfg"):
         print("Error: File server.cfg not found.")
@@ -160,8 +152,6 @@ def main():
                 ai_objs.append(ai_obj)
 
                 idx += 1
-
-    logger.error("test")
 
     for m in meters_active:
         m.start()
