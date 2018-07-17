@@ -52,20 +52,20 @@ class DataThread(threading.Thread):
 def main():
 
     if not path.exists("server.cfg"):
-        print("Error: File server.cfg not found.")
+        logger.error("Error: File server.cfg not found.")
         exit(1)
 
     cparser = configparser.ConfigParser()
     cparser.read("server.cfg")
 
     if not "server" in cparser:
-        print("Invalid config: No server section")
+        logger.error("Invalid config: No server section")
         exit(1)
 
     required_keys = {"ip", "port", "objectname", "vendoridentifier", "location", "vendorname", "modelname", "description"}
     missing_keys = required_keys - set(cparser["server"].keys())
     if len(missing_keys) != 0:
-        print("Missing config keys in server section: " + (" ".join(missing_keys)))
+        logger.error("Missing config keys in server section: " + (" ".join(missing_keys)))
         exit(1)
 
     device_info = {
@@ -82,7 +82,8 @@ def main():
         'description': cparser["server"]["description"]
     }
 
-    print (device_info)
+    logger.info("=== INIT ===")
+    logger.info(device_info)
 
     this_device = LocalDeviceObject(
         objectName=device_info["objectName"],
@@ -97,7 +98,7 @@ def main():
     this_device._values['description'] = CharacterString(device_info['description'])
 
     this_addr = str(device_info['ip']+'/'+str(device_info['netmask'])+':'+str(device_info['port']))
-    print("bacnet server will listen at {}".format(this_addr))
+    logger.info("bacnet server will listen at {}".format(this_addr))
     this_application = BIPSimpleApplication(this_device, this_addr)
     this_application.add_capability(ReadWritePropertyMultipleServices)
     this_device.protocolServicesSupported = this_application.get_services_supported().value
@@ -105,15 +106,15 @@ def main():
     meters_active = []
     ai_objs = []
     idx = 1
-    print("Initializing meters...")
+    logger.info("Initializing meters...")
     for key, metermodule in METERS.items():
         if not key in cparser["server"]:
-            print("No key '{}' in config server section. Skipping".format(key))
+            logger.warning("No key '{}' in config server section. Skipping".format(key))
             continue
         metersections = cparser["server"][key].split()
         missing_metersections = set(metersections) - set(cparser.keys())
         if len(missing_metersections) != 0:
-            print("Missing config sections for meters: "
+            logger.error("Missing config sections for meters: "
                 + "".join(missing_metersections))
             exit(1)
 
@@ -121,7 +122,7 @@ def main():
             info = cparser[metersection]
 
             ms = metermodule.getMeters(info)
-            print("Got {} meter(s) from {}".format(len(ms), metersection))
+            logger.info("Got {} meter(s) from {}".format(len(ms), metersection))
             meters_active.extend(ms)
 
             for m in ms:
@@ -138,14 +139,14 @@ def main():
                         if updateInterval < 0:
                             raise ValueError("Invalid negative value :" + info["updateInterval"])
                     except ValueError as e:
-                        print("Value of updateInterval in section {}: {}".format(metersection, e))
+                        logger.error("Value of updateInterval in section {}: {}".format(metersection, e))
                         exit(1)
                     ai_obj._values["updateInterval"] = Unsigned(updateInterval)
                 if "resolution" in info:
                     try:
                         resolution = float(info["resolution"])
                     except ValueError as e:
-                        print("Value of updateInterval in section {}: {}".format(metersection, e))
+                        logger.error("Value of updateInterval in section {}: {}".format(metersection, e))
                         exit(1)
                     ai_obj._values["resolution"] = Real(resolution)
                 this_application.add_object(ai_obj)
