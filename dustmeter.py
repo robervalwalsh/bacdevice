@@ -76,16 +76,15 @@ class Dustmeter(threading.Thread):
                     buf = s.recv(64)
                     if len(buf) != 0:
                         idel_loop_count = 0;
-                        [small_str, large_str] = buf.split(b',')
+                        try:
+                            [small_str, large_str] = buf.split(b',')
+                        except ValueError:
+                            small_str = "-1"
+                            large_str = "-1"
                         smalldst = int(small_str)
                         largedst = int(large_str)
-                        #
-                        #
-                        #
                         logger.debug("Data from {} at {}:{} at {} is: {}, {}".format(self.name, self.host, self.port, datetime.now(), smalldst, largedst))
-                        #
-                        #
-                        #
+
                         for i, dusts in enumerate(self.dustvalues):
                             dusts.is_connected = True
                             if (i==0):
