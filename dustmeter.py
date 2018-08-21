@@ -83,14 +83,18 @@ class Dustmeter(threading.Thread):
                             large_str = "-1"
                         smalldst = int(small_str)
                         largedst = int(large_str)
-                        logger.debug("Data from {} at {}:{} at {} is: {}, {}".format(self.name, self.host, self.port, datetime.now(), smalldst, largedst))
+                        # According to manual: ( average count over the last minute per cubic foot) / 100
+                        # We return the absolute count per cubic metre, so * 100 and * 35.314666721
+                        smallmetric = smalldst * 3531.4666721
+                        largemetric = largedst * 3531.4666721
+                        logger.debug("Data from {} at {}:{} at {} is: {}, {}".format(self.name, self.host, self.port, datetime.now(), smallmetric, largemetric))
 
                         for i, dusts in enumerate(self.dustvalues):
                             dusts.is_connected = True
                             if (i==0):
-                                dusts.present_value = smalldst
+                                dusts.present_value = smallmetric
                             if (i==1):
-                                dusts.present_value = largedst
+                                dusts.present_value = largemetric
 
 
                 if self.ev.wait(30):
