@@ -85,8 +85,8 @@ class Dustmeter(threading.Thread):
                         largedst = int(large_str)
                         # According to manual: ( average count over the last minute per cubic foot) / 100
                         # We return the absolute count per cubic metre, so * 100 and * 35.314666721
-                        smallmetric = smalldst * 3531.4666721
-                        largemetric = largedst * 3531.4666721
+                        smallmetric = int ( smalldst * 3531.4666721 )
+                        largemetric = int ( largedst * 3531.4666721 )
                         logger.debug("Data from {} at {}:{} at {} is: {}, {}".format(self.name, self.host, self.port, datetime.now(), smallmetric, largemetric))
 
                         for i, dusts in enumerate(self.dustvalues):
