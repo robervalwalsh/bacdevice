@@ -64,7 +64,8 @@ class Dustmeter(threading.Thread):
                     logger.error("Failed to reconnect to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                     for i, dusts in enumerate(self.dustvalues):
                         dusts.is_connected = False
-                        dusts.present_value = DustMeter.defaultProps['default_dust']
+                        #dusts.present_value = DustMeter.defaultProps['default_dust']
+                        dusts.present_value = -2
                     s.close()
                     break
             inout = [s]
@@ -102,7 +103,8 @@ class Dustmeter(threading.Thread):
                     logger.info("Closed connection to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                     for i, dusts in enumerate(self.dustvalues):
                         dusts.is_connected = False
-                        dusts.present_value = DustMeter.defaultProps['default_dust']
+                        #dusts.present_value = DustMeter.defaultProps['default_dust']
+                        dusts.present_value = -2
                     s.close()
                     return
                 else:
@@ -111,7 +113,8 @@ class Dustmeter(threading.Thread):
                         logger.info("No data, closing connection to {} at {}:{} at {}".format(self.name, self.host, self.port, datetime.now()))
                         for i, dusts in enumerate(self.dustvalues):
                             dusts.is_connected = False
-                            dusts.present_value = DustMeter.defaultProps['default_dust']
+                            #dusts.present_value = DustMeter.defaultProps['default_dust']
+                            dusts.present_value = -2
                         s.close()
                         break
 
