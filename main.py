@@ -60,7 +60,7 @@ class DataThread ( threading.Thread ) :
 						with open ( output_csv, mode ) as f :
 							writer = csv.writer ( f, delimiter = ',' )
 							outputvar = meter.getPresentValue ( )
-							writer.writerow ( [datetime.datetime.now ( ).isoformat ( " " ), outputvar] )
+							writer.writerow ( [datetime.datetime.now ( ) .isoformat ( " " ), outputvar] )
 							f.close ( )
 
 
