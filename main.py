@@ -17,6 +17,8 @@ from os import path
 import csv
 import os
 import sys
+import datetime
+import time
 from collections import OrderedDict
 
 from bacpypes import __version__ as bacpypes_version
@@ -50,6 +52,16 @@ class DataThread ( threading.Thread ) :
 					if meter.name == objname :
 						obj._values["outOfService"] = Boolean ( not meter.is_connected )
 						obj._values["presentValue"] = Real ( meter.getPresentValue ( ) )
+						fname = objname
+						output_csv = os.path.join ( str ( '/home/cleangat/bacdevice/csv' ), fname + u".csv" )
+						mode = 'a'
+						if sys.version_info.major < 3:
+							mode += 'b'
+						with open ( output_csv, mode ) as f :
+							writer = csv.writer ( f, delimiter = ',' )
+							outputvar = meter.getPresentValue ( )
+							writer.writerow ( [datetime.datetime.now ( ).isoformat ( " " ), outputvar] )
+							f.close ( )
 
 
 	def stop ( self ) :
@@ -164,6 +176,7 @@ def main ( ) :
 				with open ( output_csv, mode ) as f :
 					header = OrderedDict ( [ ( 'time', None ), ( m.name, None ) ] )
 					writer = csv.DictWriter ( f, fieldnames = header, extrasaction = u"ignore" )
+					writer.writeheader ( )
 
 					f.close ( )
 
