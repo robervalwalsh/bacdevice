@@ -15,6 +15,8 @@ from uuid import getnode
 from os import path
 
 import csv
+import os
+import sys
 from collections import OrderedDict
 
 from bacpypes import __version__ as bacpypes_version
@@ -48,6 +50,7 @@ class DataThread ( threading.Thread ) :
 					if meter.name == objname :
 						obj._values["outOfService"] = Boolean ( not meter.is_connected )
 						obj._values["presentValue"] = Real ( meter.getPresentValue ( ) )
+
 
 	def stop ( self ) :
 		self.flag_stop = True
@@ -105,80 +108,81 @@ def main ( ) :
 	meters_active = []
 	ai_objs = []
 	idx = 1
-	logger.info ( "Opening file..." )
-	mode = 'w'
-	if sys.version_info.major < 3:
-		mode += 'b'
 
-	with open ( "testout.csv", mode ) as f :
-		header = OrderedDict ( )
-		logger.info ( "Initializing meters..." )
-		for key, metermodule in METERS.items ( ) :
-			if not key in cparser["server"] :
-				logger.warning ( "No key '{}' in config server section. Skipping" .format ( key ) )
-				continue
-			metersections = cparser["server"][key].split ( )
-			missing_metersections = set ( metersections ) - set ( cparser.keys ( ) )
-			if len ( missing_metersections ) != 0 :
-				logger.error ( "Missing config sections for meters: " + "" .join ( missing_metersections ) )
-				exit ( 1 )
+	logger.info ( "Initializing meters..." )
+	for key, metermodule in METERS.items ( ) :
+		if not key in cparser["server"] :
+			logger.warning ( "No key '{}' in config server section. Skipping" .format ( key ) )
+			continue
+		metersections = cparser["server"][key].split ( )
+		missing_metersections = set ( metersections ) - set ( cparser.keys ( ) )
+		if len ( missing_metersections ) != 0 :
+			logger.error ( "Missing config sections for meters: " + "" .join ( missing_metersections ) )
+			exit ( 1 )
 
-			for metersection in metersections :
-				info = cparser[metersection]
+		for metersection in metersections :
+			info = cparser[metersection]
 
-				ms = metermodule.getMeters ( info )
-				logger.info ( "Got {} meter(s) from {}" .format ( len ( ms ), metersection ) )
-				meters_active.extend ( ms )
+			ms = metermodule.getMeters ( info )
+			logger.info ( "Got {} meter(s) from {}" .format ( len ( ms ), metersection ) )
+			meters_active.extend ( ms )
 
-				for m in ms :
-					m.name = "{}_{}" .format ( metersection, m.name )
-					ai_obj = AnalogInputObject ( objectIdentifier = ( "analogInput", idx ), objectName = m.name )
-					if "description" in info :
-						ai_obj._values["description"] = CharacterString ( info["description"] )
-					if "deviceType" in info :
-						ai_obj._values["deviceType"] = CharacterString ( info["deviceType"] )
-					ai_obj._values["units"] = EngineeringUnits ( "noUnits" )
-					if "updateInterval" in info :
-						try :
-							updateInterval = int ( info["updateInterval"] )
-							if updateInterval < 0 :
-								raise ValueError ( "Invalid negative value :" + info["updateInterval"] )
-						except ValueError as e :
-							logger.error ( "Value of updateInterval in section {}: {}" .format ( metersection, e ) )
-							exit ( 1 )
-						ai_obj._values["updateInterval"] = Unsigned ( updateInterval )
-					if "resolution" in info :
-						try :
-							resolution = float ( info["resolution"] )
-						except ValueError as e :
-							logger.error ( "Value of updateInterval in section {}: {}" .format ( metersection, e ) )
-							exit ( 1 )
-						ai_obj._values["resolution"] = Real ( resolution )
-					this_application.add_object ( ai_obj )
-					ai_objs.append ( ai_obj )
+			for m in ms :
+				m.name = "{}_{}" .format ( metersection, m.name )
+				ai_obj = AnalogInputObject ( objectIdentifier = ( "analogInput", idx ), objectName = m.name )
+				if "description" in info :
+					ai_obj._values["description"] = CharacterString ( info["description"] )
+				if "deviceType" in info :
+					ai_obj._values["deviceType"] = CharacterString ( info["deviceType"] )
+				ai_obj._values["units"] = EngineeringUnits ( "noUnits" )
+				if "updateInterval" in info :
+					try :
+						updateInterval = int ( info["updateInterval"] )
+						if updateInterval < 0 :
+							raise ValueError ( "Invalid negative value :" + info["updateInterval"] )
+					except ValueError as e :
+						logger.error ( "Value of updateInterval in section {}: {}" .format ( metersection, e ) )
+						exit ( 1 )
+					ai_obj._values["updateInterval"] = Unsigned ( updateInterval )
+				if "resolution" in info :
+					try :
+						resolution = float ( info["resolution"] )
+					except ValueError as e :
+						logger.error ( "Value of updateInterval in section {}: {}" .format ( metersection, e ) )
+						exit ( 1 )
+					ai_obj._values["resolution"] = Real ( resolution )
+				this_application.add_object ( ai_obj )
+				ai_objs.append ( ai_obj )
 
-					idx += 1
+				idx += 1
 
-					header.update ( m.name, None )
+				fname = m.name
+				output_csv = os.path.join ( str ( '/home/cleangat/bacdevice/csv' ), fname + u".csv" )
+				mode = 'w'
+				if sys.version_info.major < 3:
+					mode += 'b'
+				with open ( output_csv, mode ) as f :
+					header = OrderedDict ( [ ( 'time', None ), ( m.name, None ) ] )
+					writer = csv.DictWriter ( f, fieldnames = header, extrasaction = u"ignore" )
 
-		logger.info ( "Writing header..." )
-		writer = csv.DictWriter ( f, fieldnames = header, extrasaction = u"ignore" )
-		writer.writeheader ( )
+					f.close ( )
 
-		for m in meters_active :
-			m.start ( )
 
-		datathread = DataThread ( meters_active, ai_objs )
-		datathread.start ( )
 
-		bacpypesrun ( )
+	for m in meters_active :
+		m.start ( )
 
-		datathread.stop ( )
-		datathread.join ( )
+	datathread = DataThread ( meters_active, ai_objs )
+	datathread.start ( )
 
-		for m in meters_active :
-			m.stop ( )
-			m.join ( )
+	bacpypesrun ( )
+
+	datathread.stop ( )
+	datathread.join ( )
+
+	for m in meters_active :
+		m.stop ( )
+		m.join ( )
 
 if __name__ == "__main__" :
 	main ( )
