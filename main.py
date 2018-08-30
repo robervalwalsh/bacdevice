@@ -45,7 +45,7 @@ class DataThread ( threading.Thread ) :
 
 	def run ( self ) :
 		while not self.flag_stop :
-			time.sleep ( 1 )
+			time.sleep ( 10 )
 			for obj in self.objs :
 				objname = str ( obj._values["objectName"] )
 				for meter in self.meters :
@@ -60,7 +60,7 @@ class DataThread ( threading.Thread ) :
 						with open ( output_csv, mode ) as f :
 							writer = csv.writer ( f, delimiter = ',' )
 							outputvar = meter.getPresentValue ( )
-							writer.writerow ( [datetime.datetime.now ( ) .isoformat ( " " ), outputvar] )
+							writer.writerow ( [datetime.datetime.now ( ) .replace ( microsecond = 0 ) .isoformat ( " " ), outputvar] )
 							f.close ( )
 
 
@@ -170,11 +170,11 @@ def main ( ) :
 
 				fname = m.name
 				output_csv = os.path.join ( str ( '/home/cleangat/bacdevice/csv' ), fname + u".csv" )
-				mode = 'w'
+				mode = 'a'
 				if sys.version_info.major < 3:
 					mode += 'b'
 				with open ( output_csv, mode ) as f :
-					header = OrderedDict ( [ ( 'time', None ), ( m.name, None ) ] )
+					header = OrderedDict ( [ ( '# time', None ), ( m.name, None ) ] )
 					writer = csv.DictWriter ( f, fieldnames = header, extrasaction = u"ignore" )
 					writer.writeheader ( )
 
