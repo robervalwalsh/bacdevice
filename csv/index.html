@@ -1,0 +1,551 @@
+<html>
+	<head>
+		<script type="text/javascript" src="dygraph.js"></script>
+		<script type="text/javascript" src="synchronizer.js"></script>
+		<link rel="stylesheet" href="dygraph.css" />
+		<title>
+			DAF Status
+		</title>
+	</head>
+
+	<style type="text/css">
+		.Table
+		{
+			display: table;
+		}
+		.Title
+		{
+			display: table-caption;
+			text-align: center;
+			font-weight: bold;
+			font-size: larger;
+		}
+		.Heading
+		{
+			display: table-row;
+			font-weight: bold;
+			text-align: center;
+		}
+		.Row
+		{
+			display: table-row;
+		}
+		.Cell
+		{
+			display: table-cell;
+			border: solid;
+			border-width: thin;
+			padding-left: 5px;
+			padding-right: 5px;
+		}
+	</style>
+	<body>
+		<h1><center> DAF CMS Status </center></h1>
+
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+
+<div class="Table" style="width: 90%; border: 1px; solid #000;">
+	<div class="Title">
+		<p>Raspberry 4</p>
+	</div>
+	<div class="Heading">
+		<div class="Cell">
+			<p>Temperature</p>
+		</div>
+		<div class="Cell">
+			<p>Humidity</p>
+		</div>
+		<div class="Cell">
+			<p>Pressure</p>
+		</div>
+	</div>
+	<div class="Row">
+		<div class="Cell" id="graphdiv_rasp4_temp" style="width:30%; height:300px;">
+		</div>
+		<div class="Cell" id="graphdiv_rasp4_hum" style="width:30%; height:300px;">
+		</div>
+		<div class="Cell" id="graphdiv_rasp4_pres" style="width:30%; height:300px;">
+		</div>
+	</div>
+</div>
+
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+
+<div class="Table" style="width: 90%; border: 1px; solid #000;">
+	<div class="Title">
+		<p>Raspberry 5</p>
+	</div>
+	<div class="Heading">
+		<div class="Cell">
+			<p>Temperature</p>
+		</div>
+		<div class="Cell">
+			<p>Humidity</p>
+		</div>
+		<div class="Cell">
+			<p>Pressure</p>
+		</div>
+	</div>
+	<div class="Row">
+		<div class="Cell" id="graphdiv_rasp5_temp" style="width:30%; height:300px;">
+		</div>
+		<div class="Cell" id="graphdiv_rasp5_hum" style="width:30%; height:300px;">
+		</div>
+		<div class="Cell" id="graphdiv_rasp5_pres" style="width:30%; height:300px;">
+		</div>
+	</div>
+</div>
+
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+
+<div class="Table" style="width: 90%; border: 1px; solid #000;">
+	<div class="Title">
+		<p>Pumpstation</p>
+	</div>
+	<div class="Heading">
+		<div class="Cell">
+			<p>Pressure 1</p>
+		</div>
+		<div class="Cell">
+			<p>Pressure 2</p>
+		</div>
+	</div>
+	<div class="Row">
+		<div class="Cell" id="graphdiv_pump_p1" style="width:45%; height:300px;">
+		</div>
+		<div class="Cell" id="graphdiv_pump_p2" style="width:45%; height:300px;">
+		</div>
+
+	</div>
+	<div class="Heading">
+		<div class="Cell">
+			<p>Pump 1 Status</p>
+		</div>
+		<div class="Cell">
+			<p>Pump 2 Status</p>
+		</div>
+	</div>
+	<div class="Row">
+		<div class="Cell" id="graphdiv_pump_p1s" style="width:45%; height:300px;">
+		</div>
+		<div class="Cell" id="graphdiv_pump_p2s" style="width:45%; height:300px;">
+		</div>
+
+	</div>
+	<div class="Heading">
+		<div class="Cell">
+			<p>Pump 1 Hours</p>
+		</div>
+		<div class="Cell">
+			<p>Pump 2 Hours</p>
+		</div>
+	</div>
+	<div class="Row">
+		<div class="Cell" id="graphdiv_pump_p1h" style="width:45%; height:300px;">
+		</div>
+		<div class="Cell" id="graphdiv_pump_p2h" style="width:45%; height:300px;">
+		</div>
+
+	</div>
+	<div class="Heading">
+		<div class="Cell">
+			<p>Pressure System</p>
+		</div>
+		<div class="Cell">
+			<p>Status Valve 1</p>
+		</div>
+	</div>
+	<div class="Row">
+		<div class="Cell" id="graphdiv_pump_ps" style="width:45%; height:300px;">
+		</div>
+		<div class="Cell" id="graphdiv_pump_v1" style="width:45%; height:300px;">
+		</div>
+
+	</div>
+	<div class="Heading">
+		<div class="Cell">
+			<p>Status Valve 2</p>
+		</div>
+		<div class="Cell">
+			<p>Status Valve 3</p>
+		</div>
+	</div>
+	<div class="Row">
+		<div class="Cell" id="graphdiv_pump_v2" style="width:45%; height:300px;">
+		</div>
+		<div class="Cell" id="graphdiv_pump_v3" style="width:45%; height:300px;">
+		</div>
+
+	</div>
+</div>
+
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+
+<div class="Table" style="width: 90%; border: 1px; solid #000;">
+	<div class="Title">
+		<p>Dust 1</p>
+	</div>
+	<div class="Heading">
+		<div class="Cell">
+			<p>Small</p>
+		</div>
+		<div class="Cell">
+			<p>Large</p>
+		</div>
+	</div>
+	<div class="Row">
+		<div class="Cell" id="graphdiv_dust1s" style="width:30%; height:300px;">
+		</div>
+		<div class="Cell" id="graphdiv_dust1l" style="width:30%; height:300px;">
+		</div>
+	</div>
+</div>
+
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+
+<div class="Table" style="width: 90%; border: 1px; solid #000;">
+	<div class="Title">
+		<p>Dust 2</p>
+	</div>
+	<div class="Heading">
+		<div class="Cell">
+			<p>Small</p>
+		</div>
+		<div class="Cell">
+			<p>Large</p>
+		</div>
+	</div>
+	<div class="Row">
+		<div class="Cell" id="graphdiv_dust2s" style="width:30%; height:300px;">
+		</div>
+		<div class="Cell" id="graphdiv_dust2l" style="width:30%; height:300px;">
+		</div>
+	</div>
+</div>
+
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+
+
+<script type="text/javascript">
+
+	grasp4t = new Dygraph (
+		document.getElementById ( "graphdiv_rasp4_temp" ),
+    		"raspberry4_BME680_i2c-0_0x77_temp.csv",
+		{
+			labels : ["Date", "Temperature"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Temperature (C)',
+			color : 'red',
+    			rollPeriod : 10,
+			showRoller : true
+		}
+	);
+
+	grasp4h = new Dygraph (
+		document.getElementById ( "graphdiv_rasp4_hum" ),
+		"raspberry4_BME680_i2c-0_0x77_hum.csv",
+		{
+			labels: ["Date", "Relative Humidity"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Relative Humidity (%RH)',
+			color : 'blue',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	grasp4p = new Dygraph (
+		document.getElementById ( "graphdiv_rasp4_pres" ),
+		"raspberry4_BME680_i2c-0_0x77_pres.csv",
+		{
+			labels: ["Date", "Pressure"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Pressure (hPa)',
+			color : 'green',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	grasp5t = new Dygraph (
+		document.getElementById ( "graphdiv_rasp5_temp" ),
+    		"raspberry5_BME680_i2c-0_0x77_temp.csv",
+		{
+			labels : ["Date", "Temperature"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Temperature (C)',
+			color : 'red',
+    			rollPeriod : 10,
+			showRoller : true
+		}
+	);
+
+	grasp5h = new Dygraph (
+		document.getElementById ( "graphdiv_rasp5_hum" ),
+		"raspberry5_BME680_i2c-0_0x77_hum.csv",
+		{
+			labels: ["Date", "Relative Humidity"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Relative Humidity (%RH)',
+			color : 'blue',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	grasp5p = new Dygraph (
+		document.getElementById ( "graphdiv_rasp5_pres" ),
+		"raspberry5_BME680_i2c-0_0x77_pres.csv",
+		{
+			labels: ["Date", "Pressure"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Pressure (hPa)',
+			color : 'green',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	gpumpp1 = new Dygraph (
+		document.getElementById ( "graphdiv_pump_p1" ),
+		"pumpstation1_P1.csv",
+		{
+			labels: ["Date", "Pressure"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Pressure (mBar)',
+			color : 'orange',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	gpumpp2 = new Dygraph (
+		document.getElementById ( "graphdiv_pump_p2" ),
+		"pumpstation1_P2.csv",
+		{
+			labels: ["Date", "Pressure"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Pressure (mbar)',
+			color : 'cyan',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	gpumpps = new Dygraph (
+		document.getElementById ( "graphdiv_pump_ps" ),
+		"pumpstation1_PSYS.csv",
+		{
+			labels: ["Date", "Pressure"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Pressure (mBar)',
+			color : 'indigo',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	gpumpp1h = new Dygraph (
+		document.getElementById ( "graphdiv_pump_p1h" ),
+		"pumpstation1_PUMP1HOURS.csv",
+		{
+			labels: ["Date", "Pump Hours"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Pump Hours',
+			color : 'orange',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	gpumpp2h = new Dygraph (
+		document.getElementById ( "graphdiv_pump_p2h" ),
+		"pumpstation1_PUMP2HOURS.csv",
+		{
+			labels: ["Date", "Pump Hours"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Pump Hours',
+			color : 'cyan',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	gpumpp1s = new Dygraph (
+		document.getElementById ( "graphdiv_pump_p1s" ),
+		"pumpstation1_PUMP1STATUS.csv",
+		{
+			labels: ["Date", "Pump Status"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Pump Status',
+			color : 'orange',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	gpumpp2s = new Dygraph (
+		document.getElementById ( "graphdiv_pump_p2s" ),
+		"pumpstation1_PUMP2STATUS.csv",
+		{
+			labels: ["Date", "Pump Status"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Pump Status',
+			color : 'cyan',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	gpumpv1 = new Dygraph (
+		document.getElementById ( "graphdiv_pump_v1" ),
+		"pumpstation1_V1.csv",
+		{
+			labels: ["Date", "Valve Status"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Valve Status',
+			color : 'indigo',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	gpumpv2 = new Dygraph (
+		document.getElementById ( "graphdiv_pump_v2" ),
+		"pumpstation1_V2.csv",
+		{
+			labels: ["Date", "Valve Status"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Valve Status',
+			color : 'indigo',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	gpumpv3 = new Dygraph (
+		document.getElementById ( "graphdiv_pump_v3" ),
+		"pumpstation1_V3.csv",
+		{
+			labels: ["Date", "Valve Status"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Valve Status',
+			color : 'indigo',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	gdust1s = new Dygraph (
+		document.getElementById ( "graphdiv_dust1s" ),
+		"dustmeter_a49_dust_small.csv",
+		{
+			labels: ["Date", "Counts / m3"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Counts / m3',
+			color : 'brown',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	gdust1l = new Dygraph (
+		document.getElementById ( "graphdiv_dust1l" ),
+		"dustmeter_a49_dust_large.csv",
+		{
+			labels: ["Date", "Counts / m3"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Counts / m3',
+			color : 'magenta',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	gdust2s = new Dygraph (
+		document.getElementById ( "graphdiv_dust2s" ),
+		"dustmeter_a57_dust_small.csv",
+		{
+			labels: ["Date", "Counts / m3"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Counts / m3',
+			color : 'brown',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	gdust2l = new Dygraph (
+		document.getElementById ( "graphdiv_dust2l" ),
+		"dustmeter_a57_dust_large.csv",
+		{
+			labels: ["Date", "Counts / m3"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Counts / m3',
+			color : 'magenta',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+  
+	sync_rasp4 = Dygraph.synchronize ( grasp4t, grasp4h, grasp4p,
+	{
+		zoom : true, selection : true, range : false
+	} );
+
+	sync_rasp5 = Dygraph.synchronize ( grasp5t, grasp5h, grasp5p,
+	{
+		zoom : true, selection : true, range : false
+	} );
+
+	sync_pump = Dygraph.synchronize ( gpumpp1, gpumpp2, gpumpps, gpumpp1h, gpumpp2h, gpumpp1s, gpumpp2s, gpumpv1, gpumpv2, gpumpv3,
+	{
+		zoom : true, selection : true, range : false
+	} );
+
+	sync_dust1 = Dygraph.synchronize ( gdust1s, gdust1l,
+	{
+		zoom : true, selection : true, range : false
+	} );
+
+	sync_dust2 = Dygraph.synchronize ( gdust2s, gdust2l,
+	{
+		zoom : true, selection : true, range : false
+	} );
+
+</script>
+
+</body>
+</html>
