@@ -170,7 +170,7 @@ def main ( ) :
 				idx += 1
 
 				fname = m.name
-				output_csv = os.path.join ( str ( '/home/cleangat/bacdevice/csv' ), fname + u".csv" )
+				output_csv = os.path.join ( str ( '/var/www/html' ), fname + u".csv" )
 				mode = 'a'
 				if sys.version_info.major < 3:
 					mode += 'b'
