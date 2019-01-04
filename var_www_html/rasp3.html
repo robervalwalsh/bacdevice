@@ -1,0 +1,131 @@
+<html>
+	<head>
+		<script type="text/javascript" src="dygraph.js"></script>
+		<script type="text/javascript" src="synchronizer.js"></script>
+		<link rel="stylesheet" href="dygraph.css" />
+		<title>
+			DAF Status
+		</title>
+	</head>
+
+	<style type="text/css">
+		.Table
+		{
+			display: table;
+		}
+		.Title
+		{
+			display: table-caption;
+			text-align: center;
+			font-weight: bold;
+			font-size: larger;
+		}
+		.Heading
+		{
+			display: table-row;
+			font-weight: bold;
+			text-align: center;
+		}
+		.Row
+		{
+			display: table-row;
+		}
+		.Cell
+		{
+			display: table-cell;
+			border: solid;
+			border-width: thin;
+			padding-left: 5px;
+			padding-right: 5px;
+		}
+	</style>
+	<body>
+		<h1><center> DAF CMS Status </center></h1>
+
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+<p> <a href="index.html">Back to main page</a> </p>
+<p> &nbsp; </p>
+
+<div class="Table" style="width: 90%; border: 1px; solid #000;">
+	<div class="Title">
+		<p>Raspberry 3</p>
+	</div>
+	<div class="Heading">
+		<div class="Cell">
+			<p>Temperature</p>
+		</div>
+		<div class="Cell">
+			<p>Humidity</p>
+		</div>
+		<div class="Cell">
+			<p>Pressure</p>
+		</div>
+	</div>
+	<div class="Row">
+		<div class="Cell" id="graphdiv_rasp3_temp" style="width:30%; height:300px;">
+		</div>
+		<div class="Cell" id="graphdiv_rasp3_hum" style="width:30%; height:300px;">
+		</div>
+		<div class="Cell" id="graphdiv_rasp3_pres" style="width:30%; height:300px;">
+		</div>
+	</div>
+</div>
+
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+<p> &nbsp; </p>
+
+<script type="text/javascript">
+
+	grasp3t = new Dygraph (
+		document.getElementById ( "graphdiv_rasp3_temp" ),
+    		"raspberry3_BME680_i2c-0_0x77_temp.csv",
+		{
+			labels : ["Date", "Temperature"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Temperature (C)',
+			color : 'red',
+    			rollPeriod : 10,
+			showRoller : true
+		}
+	);
+
+	grasp3h = new Dygraph (
+		document.getElementById ( "graphdiv_rasp3_hum" ),
+		"raspberry3_BME680_i2c-0_0x77_hum.csv",
+		{
+			labels: ["Date", "Relative Humidity"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Relative Humidity (%RH)',
+			color : 'blue',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	grasp3p = new Dygraph (
+		document.getElementById ( "graphdiv_rasp3_pres" ),
+		"raspberry3_BME680_i2c-0_0x77_pres.csv",
+		{
+			labels: ["Date", "Pressure"],
+    			legend : 'always',
+			visibility : [true],
+			ylabel : 'Pressure (hPa)',
+			color : 'green',
+			rollPeriod: 10,
+			showRoller: true
+		}
+	);
+
+	sync_rasp3 = Dygraph.synchronize ( grasp3t, grasp3h, grasp3p,
+	{
+		zoom : true, selection : true, range : false
+	} );
+  
+</script>
+
+</body>
+</html>
