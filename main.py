@@ -96,8 +96,8 @@ class DataThread ( threading.Thread ) :
 						obj._values["outOfService"] = Boolean ( not meter.is_connected )
 						obj._values["presentValue"] = Real ( meter.getPresentValue ( ) )
 						fname = objname
-						output_csv = os.path.join ( str ( '/home/cleangat/scratch/bacdevice/csv' ), fname + u".csv" )
-						#output_csv = os.path.join ( str ( '/var/www/html' ), fname + u".csv" )
+#						output_csv = os.path.join ( str ( '/home/cleangat/scratch/bacdevice/csv' ), fname + u".csv" )
+						output_csv = os.path.join ( str ( '/var/www/html' ), fname + u".csv" )
 						mode = 'a'
 						if sys.version_info.major < 3:
 							mode += 'b'
