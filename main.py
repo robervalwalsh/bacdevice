@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# Main program to broadcast data points to the DESY BACNet
+
 import logging
 logger = logging.getLogger ( 'mybaclog' )
 logger.setLevel ( logging.DEBUG )
