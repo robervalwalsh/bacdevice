@@ -173,14 +173,10 @@ def main ( ) :
 			logger.error ( "Missing config sections for meters: " + "" .join ( missing_metersections ) )
 			exit ( 1 )
 
-		print("METER items key = ",key, metermodule) 
-
 		for metersection in metersections :
-			print("meter sectiom = ",metersection) 
 			info = cparser[metersection]
 
 			ms = metermodule.getMeters ( info )
-			print("ms  = ", ms) 
 			logger.info ( "Got {} meter(s) from {}" .format ( len ( ms ), metersection ) )
 			meters_active.extend ( ms )
 
