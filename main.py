@@ -222,31 +222,6 @@ def main ( ) :
 
 					f.close ( )
 
-
-#	for m in meters_active :
-#		if m.name == 'raspberry2_BME680_i2c-0_0x77_pres':
-#		   m.start ( )
-#
-#	for m in meters_active :
-#                if m.name == 'raspberry2_BME680_i2c-0_0x77_hum':
-#                   m.start ( )
-#
-#	for m in meters_active :
-#                if m.name == 'raspberry2_BME680_i2c-0_0x77_temp':
-#                   m.start ( )
-#
-#	for m in meters_active :
-#                if m.name == 'raspberry3_BME680_i2c-0_0x77_pres':
-#                   m.start ( )
-#
-#	for m in meters_active :
-#                if m.name == 'raspberry3_BME680_i2c-0_0x77_hum':
-#                   m.start ( )
-#
-#	for m in meters_active :
-#                if m.name == 'raspberry3_BME680_i2c-0_0x77_temp':
-#                   m.start ( )
-
 	for m in meters_active :
                    m.start ( )
 
