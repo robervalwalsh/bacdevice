@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# Main program to broadcast data points to the DESY BACNet
+# --------------------------------------------------------
+
 import logging
 logger = logging.getLogger ( 'mybaclog' )
 logger.setLevel ( logging.DEBUG )
@@ -33,7 +36,47 @@ from bacpypes.service.object import ReadWritePropertyMultipleServices
 import dustmeter
 import thermorasp
 import pumpstation
-METERS = { "dustmeters": dustmeter, "thermorasps": thermorasp, "pumpstations": pumpstation }
+#METERS = { "dustmeters": dustmeter, "thermorasps": thermorasp, "pumpstations": pumpstation }
+METERS = { "thermorasps": thermorasp, "pumpstations": pumpstation, "dustmeters": dustmeter  }
+
+
+inst_nr = dict()
+
+inst_nr["dustmeter_a27_dust_small"]           = 1
+inst_nr["dustmeter_a27_dust_large"]           = 2
+inst_nr["dustmeter_a40_dust_small"]           = 3
+inst_nr["dustmeter_a40_dust_large"]           = 4
+inst_nr["dustmeter_a43_dust_small"]           = 5
+inst_nr["dustmeter_a43_dust_large"]           = 6
+inst_nr["dustmeter_a49_dust_small"]           = 7
+inst_nr["dustmeter_a49_dust_large"]           = 8
+inst_nr["dustmeter_a57_dust_small"]           = 9
+inst_nr["dustmeter_a57_dust_large"]           = 10
+
+inst_nr["pumpstation1_PSYS"]                  = 11
+inst_nr["pumpstation1_P1"]                    = 12
+inst_nr["pumpstation1_P2"]                    = 13
+inst_nr["pumpstation1_PUMP1STATUS"]           = 14
+inst_nr["pumpstation1_PUMP2STATUS"]           = 15
+inst_nr["pumpstation1_V1"]                    = 16
+inst_nr["pumpstation1_V2"]                    = 17
+inst_nr["pumpstation1_V3"]                    = 18
+inst_nr["pumpstation1_PUMP1HOURS"]            = 19
+inst_nr["pumpstation1_PUMP2HOURS"]            = 20
+
+inst_nr["raspberry2_BME680_i2c-0_0x77_temp"]  = 21
+inst_nr["raspberry2_BME680_i2c-0_0x77_hum"]   = 22
+inst_nr["raspberry2_BME680_i2c-0_0x77_pres"]  = 23
+inst_nr["raspberry3_BME680_i2c-0_0x77_temp"]  = 24
+inst_nr["raspberry3_BME680_i2c-0_0x77_hum"]   = 25
+inst_nr["raspberry3_BME680_i2c-0_0x77_pres"]  = 26
+inst_nr["raspberry4_BME680_i2c-0_0x77_temp"]  = 27
+inst_nr["raspberry4_BME680_i2c-0_0x77_hum"]   = 28
+inst_nr["raspberry4_BME680_i2c-0_0x77_pres"]  = 29
+inst_nr["raspberry5_BME680_i2c-0_0x77_temp"]  = 30
+inst_nr["raspberry5_BME680_i2c-0_0x77_hum"]   = 31
+inst_nr["raspberry5_BME680_i2c-0_0x77_pres"]  = 32
+
 
 class DataThread ( threading.Thread ) :
 	def __init__ ( self, meters, objs ) :
@@ -53,7 +96,7 @@ class DataThread ( threading.Thread ) :
 						obj._values["outOfService"] = Boolean ( not meter.is_connected )
 						obj._values["presentValue"] = Real ( meter.getPresentValue ( ) )
 						fname = objname
-						#output_csv = os.path.join ( str ( '/home/cleangat/bacdevice/csv' ), fname + u".csv" )
+#						output_csv = os.path.join ( str ( '/home/cleangat/scratch/bacdevice/csv' ), fname + u".csv" )
 						output_csv = os.path.join ( str ( '/var/www/html' ), fname + u".csv" )
 						mode = 'a'
 						if sys.version_info.major < 3:
@@ -123,7 +166,7 @@ def main ( ) :
 	idx = 1
 
 	logger.info ( "Initializing meters..." )
-	for key, metermodule in METERS.items ( ) :
+	for key, metermodule in sorted(METERS.items(),reverse=True) :
 		if not key in cparser["server"] :
 			logger.warning ( "No key '{}' in config server section. Skipping" .format ( key ) )
 			continue
@@ -142,7 +185,8 @@ def main ( ) :
 
 			for m in ms :
 				m.name = "{}_{}" .format ( metersection, m.name )
-				ai_obj = AnalogInputObject ( objectIdentifier = ( "analogInput", idx ), objectName = m.name )
+				ai_obj = AnalogInputObject ( objectIdentifier = ( "analogInput", inst_nr[m.name] ), objectName = m.name )
+				print("idx = ", idx, "  inst nr = ",inst_nr[m.name] ," name = ",m.name) 
 				if "description" in info :
 					ai_obj._values["description"] = CharacterString ( info["description"] )
 				if "deviceType" in info :
@@ -181,10 +225,8 @@ def main ( ) :
 
 					f.close ( )
 
-
-
 	for m in meters_active :
-		m.start ( )
+                   m.start ( )
 
 	datathread = DataThread ( meters_active, ai_objs )
 	datathread.start ( )
