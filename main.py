@@ -112,6 +112,7 @@ class DataThread ( threading.Thread ) :
 		self.flag_stop = True
 
 def main ( ) :
+	tmp_nr = 1000
 
 	if not path.exists ( "server.cfg" ) :
 		logger.error ( "Error: File server.cfg not found." )
@@ -185,8 +186,14 @@ def main ( ) :
 
 			for m in ms :
 				m.name = "{}_{}" .format ( metersection, m.name )
-				ai_obj = AnalogInputObject ( objectIdentifier = ( "analogInput", inst_nr[m.name] ), objectName = m.name )
-				print("idx = ", idx, "  inst nr = ",inst_nr[m.name] ," name = ",m.name) 
+				if m.name in inst_nr:
+					my_nr = inst_nr[m.name]
+				else:
+					my_nr = tmp_nr
+					tmp_nr+=1
+					
+				ai_obj = AnalogInputObject ( objectIdentifier = ( "analogInput", my_nr ), objectName = m.name )
+				print("idx = ", idx, "  inst nr = ",my_nr ," name = ",m.name) 
 				if "description" in info :
 					ai_obj._values["description"] = CharacterString ( info["description"] )
 				if "deviceType" in info :
