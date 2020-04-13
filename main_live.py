@@ -179,8 +179,9 @@ def main ( ) :
 #     # Add a periodic callback to be run every 500 milliseconds
 #     curdoc().add_periodic_callback(update, 100)
     
-    
+    data = 0.1
     while True:
+        data +=0.1 
         pass
     
     datathread.stop ( )
