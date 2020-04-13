@@ -45,17 +45,17 @@ ds1 = r1.data_source
 
 @linear()
 def update(step):
-#     ds1.data['x'].append(unixtime)
-#     ds1.data['y'].append(data)
-#     ds1.trigger('data', ds1.data, ds1.data)
-    ds1.data['x'].append(step)
-    ds1.data['y'].append(random.randint(0,100))
+    ds1.data['x'].append(unixtime)
+    ds1.data['y'].append(data)
     ds1.trigger('data', ds1.data, ds1.data)
+#     ds1.data['x'].append(step)
+#     ds1.data['y'].append(random.randint(0,100))
+#     ds1.trigger('data', ds1.data, ds1.data)
     
 curdoc().add_root(p)
 
 # Add a periodic callback to be run every 500 milliseconds
-curdoc().add_periodic_callback(update, 500)
+curdoc().add_periodic_callback(update, 1000)
 
 class DataThread ( threading.Thread ) :
     def __init__ ( self, meters ) :
