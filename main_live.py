@@ -24,6 +24,12 @@ import datetime
 import time
 from collections import OrderedDict
 
+from bokeh.plotting import figure, curdoc
+from bokeh.driving import linear
+import random
+
+
+
 import thermorasp
 METERS = { "thermorasps": thermorasp }
 
@@ -57,7 +63,7 @@ class DataThread ( threading.Thread ) :
                     continue
                     
                 var_date = datetime.datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S.%f') .replace ( microsecond = 0 )
-
+               
 #                 output_csv = os.path.join ( str ( '.' ), fname + u".csv" )
 #                 mode = 'a'
 #                 if sys.version_info.major < 3:
@@ -66,6 +72,16 @@ class DataThread ( threading.Thread ) :
 #                     writer = csv.writer ( f, delimiter = ',' )
 #                     writer.writerow ( [datetime.datetime.now ( ) .replace ( microsecond = 0 ) .isoformat ( " " ), outputvar] )
 #                     f.close ( )
+
+            unixtime = time.time()
+
+            p = figure(plot_width=400, plot_height=400)
+            r1 = p.line([], [], color="firebrick", line_width=2)
+            ds1 = r1.data_source
+            ds1.data['x'].append(unixtime)
+            ds1.data['y'].append(measurements['raspberry3-bus1-ch1'][0])
+            ds1.trigger('data', ds1.data, ds1.data)
+ 
             print(measurements)
             print('---')
 
