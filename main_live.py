@@ -33,7 +33,15 @@ import random
 import thermorasp
 METERS = { "thermorasps": thermorasp }
 
+unixtime = time.time()
+data = -273.
 
+@linear()
+def update(step):
+    ds1.data['x'].append(unixtime)
+    ds1.data['y'].append(data)
+    ds1.trigger('data', ds1.data, ds1.data)
+    
 
 class DataThread ( threading.Thread ) :
     def __init__ ( self, meters ) :
@@ -63,7 +71,7 @@ class DataThread ( threading.Thread ) :
                     continue
                     
                 var_date = datetime.datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S.%f') .replace ( microsecond = 0 )
-               
+                
 #                 output_csv = os.path.join ( str ( '.' ), fname + u".csv" )
 #                 mode = 'a'
 #                 if sys.version_info.major < 3:
@@ -74,14 +82,8 @@ class DataThread ( threading.Thread ) :
 #                     f.close ( )
 
             unixtime = time.time()
+            data = measurements['raspberry3-bus1-ch1'][0]
 
-            p = figure(plot_width=400, plot_height=400)
-            r1 = p.line([], [], color="firebrick", line_width=2)
-            ds1 = r1.data_source
-            ds1.data['x'].append(unixtime)
-            ds1.data['y'].append(measurements['raspberry3-bus1-ch1'][0])
-            ds1.trigger('data', ds1.data, ds1.data)
- 
             print(measurements)
             print('---')
 
@@ -89,6 +91,12 @@ class DataThread ( threading.Thread ) :
         self.flag_stop = True
 
 def main ( ) :
+    p = figure(plot_width=400, plot_height=400)
+    r1 = p.line([], [], color="firebrick", line_width=2)
+    ds1 = r1.data_source
+    
+    curdoc().add_root(p)
+
 
     if not path.exists ( "server.cfg" ) :
         logger.error ( "Error: File server.cfg not found." )
@@ -153,6 +161,13 @@ def main ( ) :
 
     datathread = DataThread ( meters_active )
     datathread.start ( )
+
+    print('oioi')
+    # Add a periodic callback to be run every 500 milliseconds
+    curdoc().add_periodic_callback(update, 10000)
+    
+    print('oioioioi')
+    
     
     while True:
         pass
