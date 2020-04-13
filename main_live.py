@@ -45,7 +45,7 @@ ds1 = r1.data_source
 
 @linear()
 def update(step):
-    ds1.data['x'].append(unixtime)
+    ds1.data['x'].append(step)
     ds1.data['y'].append(data)
     ds1.trigger('data', ds1.data, ds1.data)
 #     ds1.data['x'].append(step)
@@ -95,10 +95,10 @@ class DataThread ( threading.Thread ) :
 #                     writer.writerow ( [datetime.datetime.now ( ) .replace ( microsecond = 0 ) .isoformat ( " " ), outputvar] )
 #                     f.close ( )
 
-            unixtime = time.time()
-            data = measurements['raspberry3-bus1-ch1'][0]
+            unixtime = int(time.time())
+            data = measurements['raspberry3-bus1-ch1'][1]
 
-            print(measurements)
+            print(unixtime,data)
             print('---')
 
     def stop ( self ) :
