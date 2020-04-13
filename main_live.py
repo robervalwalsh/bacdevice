@@ -3,6 +3,9 @@
 # Main program to broadcast data points to the DESY BACNet
 # --------------------------------------------------------
 
+# running bokeh server:
+# bokeh serve --address fhlcleangate.desy.de --port 5001 --allow-websocket-origin=fhlcleangate.desy.de:5001  main_live.py
+
 import logging
 logger = logging.getLogger ( 'mylivelog' )
 logger.setLevel ( logging.DEBUG )
@@ -20,40 +23,93 @@ from os import path
 import csv
 import os
 import sys
-import datetime
+from datetime import datetime
 import time
 from collections import OrderedDict
+from math import pi
 
+from bokeh.plotting import figure, curdoc
+from bokeh.driving import linear
+from bokeh.models import DatetimeTickFormatter
 from bokeh.models.widgets import Div,PreText
- 
+from bokeh.layouts import column,row
+
+import random
+
+
 
 import thermorasp
 METERS = { "thermorasps": thermorasp }
 
+#unixtime = time.time()
+#data = -273.
 
 def readout(meters):
-    time.sleep ( 10 )
+    global unixtime
+    global data
+#    time.sleep ( 10 )
     measurements = {}
     for meter in meters :
         section = meter.getSection()
         if not section in measurements:
-            measurements[section] = [None]*3
+            measurements[section] = [None]*4
         fname = meter.name
         outputvar = meter.getPresentValue ( )
+        measurements[section][0] = datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S.%f') .replace ( microsecond = 0 )
         if 'temp' in fname:
-            measurements[section][0] = outputvar
-        elif 'pres' in fname:
             measurements[section][1] = outputvar
-        elif 'hum' in fname:
+        elif 'pres' in fname:
             measurements[section][2] = outputvar
+        elif 'hum' in fname:
+            measurements[section][3] = outputvar
         else:
             print('Invalid measurement for ',fname)
             continue
 
-#        var_date = datetime.datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S.%f') .replace ( microsecond = 0 )
+        var_date = datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S.%f') .replace ( microsecond = 0 )
 
-    print(measurements)
-    print('---')
+    unixtime = int(time.time())
+    data = measurements['raspberry3-bus1-ch1'][1]
+    point  = [var_date,data]
+#    print(measurements)
+    return measurements
+
+
+@linear()
+def update(step):
+    measurements = readout(mymeters)
+    # datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+    date1 = measurements['raspberry3-bus1-ch1'][0]
+    temp1 = measurements['raspberry3-bus1-ch1'][1]
+    ds1.data['x'].append(date1)
+    ds1.data['y'].append(temp1)
+    ds1.trigger('data', ds1.data, ds1.data)
+    date2 = measurements['raspberry3-bus4-ch1'][0]
+    temp2 = measurements['raspberry3-bus4-ch1'][1]
+    ds2.data['x'].append(date2)
+    ds2.data['y'].append(temp2)
+    ds2.trigger('data', ds2.data, ds2.data)
+    date3 = measurements['raspberry3-bus4-ch0'][0]
+    temp3 = measurements['raspberry3-bus4-ch0'][1]
+    ds3.data['x'].append(date3)
+    ds3.data['y'].append(temp3)
+    ds3.trigger('data', ds3.data, ds3.data)
+    
+    pre_head2.update(text="Present values")
+    pre_temp_top.update(text="Top sensor tempearture   : {} C".format(temp1))
+    pre_temp_mid.update(text="Middle sensor tempearture: {} C".format(temp2))
+    pre_temp_bot.update(text="Bottom sensor tempearture: {} C".format(temp3))
+
+    
+    deltaT = (ds1.data['x'][-1]-ds1.data['x'][0]).seconds
+    if  deltaT > 1800:
+        del ds1.data['x'][0] 
+        del ds1.data['y'][0] 
+        del ds2.data['x'][0] 
+        del ds2.data['y'][0] 
+        del ds3.data['x'][0] 
+        del ds3.data['y'][0] 
+    
     
 
 class DataThread ( threading.Thread ) :
@@ -84,22 +140,19 @@ class DataThread ( threading.Thread ) :
                     continue
                     
                 var_date = datetime.datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S.%f') .replace ( microsecond = 0 )
+                
+            unixtime = int(time.time())
+            data = measurements['raspberry3-bus1-ch1'][0]
 
-#                 output_csv = os.path.join ( str ( '.' ), fname + u".csv" )
-#                 mode = 'a'
-#                 if sys.version_info.major < 3:
-#                     mode += 'b'
-#                 with open ( output_csv, mode ) as f :
-#                     writer = csv.writer ( f, delimiter = ',' )
-#                     writer.writerow ( [datetime.datetime.now ( ) .replace ( microsecond = 0 ) .isoformat ( " " ), outputvar] )
-#                     f.close ( )
-            print(measurements)
+            print(unixtime,data)
             print('---')
 
     def stop ( self ) :
         self.flag_stop = True
 
 def main ( ) :
+    global mymeters
+
 
     if not path.exists ( "server.cfg" ) :
         logger.error ( "Error: File server.cfg not found." )
@@ -150,17 +203,66 @@ def main ( ) :
 
                 fname = m.name
 
+    mymeters = meters_active
     for m in meters_active :
         m.start ( )
 
-    
-    while True:
-        readout(meters_active)
-    
-    for m in meters_active :
-        m.stop ( )
-        m.join ( )
+#    datathread = DataThread ( meters_active )
+#    datathread.start ( )
 
+    
+#    while True:
+#        pass
+    
+#    datathread.stop ( )
+#    datathread.join ( )
+
+#    for m in meters_active :
+#        m.stop ( )
+#        m.join ( )
 
 if __name__ == "__main__" :
     main ( )
+else:
+#    div = Div(text="<img src='bacdevice/img/daf_25c_cabinet_sensors_test.jpg'>")
+    p = figure(plot_width=800, plot_height=500,x_axis_type="datetime")
+    date_format = ['%d %b %Y %H:%M:%S']
+    p.xaxis.formatter=DatetimeTickFormatter(
+           microseconds=date_format,
+           milliseconds=date_format,
+           seconds=date_format,
+           minsec=date_format,
+           minutes=date_format,
+           hourmin=date_format,
+           hours=date_format,
+           days=date_format,
+           months=date_format,
+           years=date_format
+    )
+    p.xaxis.major_label_orientation = pi/3
+    p.xaxis.axis_label = "Local time"
+    p.yaxis.axis_label = "Temperature (C)"
+    
+    r1 = p.line([], [], color="firebrick", line_width=2,legend_label='top')
+    r2 = p.line([], [], color="navy", line_width=2,legend_label='middle')
+    r3 = p.line([], [], color="green", line_width=2,legend_label='bottom')
+    
+    p.legend.location = "top_left"
+
+
+    ds1 = r1.data_source
+    ds2 = r2.data_source
+    ds3 = r3.data_source
+    
+    pre_head = PreText(text="N.B.: Readout every 10 seconds. Be patient!",width=500, height=50)
+    pre_head2 = PreText(text="",width=500, height=25)
+    pre_temp_top = PreText(text="",width=500, height=20)
+    pre_temp_mid = PreText(text="",width=500, height=20)
+    pre_temp_bot = PreText(text="",width=500, height=20)
+    
+    curdoc().add_root(column(pre_head,row(column(pre_head2,pre_temp_top,pre_temp_mid,pre_temp_bot),p,)))
+    
+    main()
+#    time.sleep ( 10 )
+    curdoc().add_periodic_callback(update, 10000)
+    
