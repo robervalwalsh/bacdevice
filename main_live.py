@@ -24,10 +24,37 @@ import datetime
 import time
 from collections import OrderedDict
 
+from bokeh.models.widgets import Div,PreText
+ 
+
 import thermorasp
 METERS = { "thermorasps": thermorasp }
 
 
+def readout(meters):
+    time.sleep ( 10 )
+    measurements = {}
+    for meter in meters :
+        section = meter.getSection()
+        if not section in measurements:
+            measurements[section] = [None]*3
+        fname = meter.name
+        outputvar = meter.getPresentValue ( )
+        if 'temp' in fname:
+            measurements[section][0] = outputvar
+        elif 'pres' in fname:
+            measurements[section][1] = outputvar
+        elif 'hum' in fname:
+            measurements[section][2] = outputvar
+        else:
+            print('Invalid measurement for ',fname)
+            continue
+
+#        var_date = datetime.datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S.%f') .replace ( microsecond = 0 )
+
+    print(measurements)
+    print('---')
+    
 
 class DataThread ( threading.Thread ) :
     def __init__ ( self, meters ) :
@@ -122,31 +149,18 @@ def main ( ) :
                 idx += 1
 
                 fname = m.name
-#                 output_csv = os.path.join ( str ( '.' ), fname + u".csv" )
-#                 mode = 'a'
-#                 if sys.version_info.major < 3:
-#                     mode += 'b'
-#                 with open ( output_csv, mode ) as f :
-#                     header = OrderedDict ( [ ( '# time', None ), ( m.name, None ) ] )
-#                     writer = csv.DictWriter ( f, fieldnames = header, extrasaction = u"ignore" )
-#                     writer.writeheader ( )
-#                     f.close ( )
 
     for m in meters_active :
         m.start ( )
 
-    datathread = DataThread ( meters_active )
-    datathread.start ( )
     
     while True:
-        pass
+        readout(meters_active)
     
-    datathread.stop ( )
-    datathread.join ( )
-
     for m in meters_active :
         m.stop ( )
         m.join ( )
+
 
 if __name__ == "__main__" :
     main ( )
