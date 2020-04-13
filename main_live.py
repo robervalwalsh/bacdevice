@@ -36,12 +36,26 @@ METERS = { "thermorasps": thermorasp }
 unixtime = time.time()
 data = -273.
 
+p = figure(plot_width=400, plot_height=400)
+r1 = p.line([], [], color="firebrick", line_width=2)
+r2 = p.line([], [], color="navy", line_width=2)
+
+ds1 = r1.data_source
+
+
 @linear()
 def update(step):
-    ds1.data['x'].append(unixtime)
-    ds1.data['y'].append(data)
+#     ds1.data['x'].append(unixtime)
+#     ds1.data['y'].append(data)
+#     ds1.trigger('data', ds1.data, ds1.data)
+    ds1.data['x'].append(step)
+    ds1.data['y'].append(random.randint(0,100))
     ds1.trigger('data', ds1.data, ds1.data)
     
+curdoc().add_root(p)
+
+# Add a periodic callback to be run every 500 milliseconds
+curdoc().add_periodic_callback(update, 500)
 
 class DataThread ( threading.Thread ) :
     def __init__ ( self, meters ) :
@@ -91,11 +105,11 @@ class DataThread ( threading.Thread ) :
         self.flag_stop = True
 
 def main ( ) :
-    p = figure(plot_width=400, plot_height=400)
-    r1 = p.line([], [], color="firebrick", line_width=2)
-    ds1 = r1.data_source
+#     p = figure(plot_width=400, plot_height=400)
+#     r1 = p.line([], [], color="firebrick", line_width=2)
+#     ds1 = r1.data_source
     
-    curdoc().add_root(p)
+#     curdoc().add_root(p)
 
 
     if not path.exists ( "server.cfg" ) :
@@ -162,11 +176,8 @@ def main ( ) :
     datathread = DataThread ( meters_active )
     datathread.start ( )
 
-    print('oioi')
-    # Add a periodic callback to be run every 500 milliseconds
-    curdoc().add_periodic_callback(update, 10000)
-    
-    print('oioioioi')
+#     # Add a periodic callback to be run every 500 milliseconds
+#     curdoc().add_periodic_callback(update, 100)
     
     
     while True:
