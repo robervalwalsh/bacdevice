@@ -6,10 +6,22 @@
 # running bokeh server:
 # bokeh serve cabinet-monitor --address fhlcleangate.desy.de --port 5002 --allow-websocket-origin=fhlcleangate.desy.de:5002
 
+import sys
+import pathlib
+import os
+from os import path
+
+pwd = str(pathlib.Path().absolute())
+wd = pwd
+if pwd.split('/')[-1] != 'bacdevice':
+    wd = pwd+'/..'
+sys.path.append(pwd)
+
+
 import logging
 logger = logging.getLogger ( 'mylivelog' )
 logger.setLevel ( logging.DEBUG )
-fh = logging.FileHandler ( __name__+'_output_live.log' )
+fh = logging.FileHandler ( logsdir+'/'+__name__+'_output_live.log' )
 fh.setLevel ( logging.DEBUG )
 logger.addHandler ( fh )
 
@@ -19,12 +31,8 @@ import threading
 import time
 import pytz
 from uuid import getnode
-from os import path
-import sys
-import pathlib
 
 import csv
-import os
 import sys
 from datetime import datetime
 import time
@@ -41,12 +49,6 @@ from bokeh.application.handlers.directory import DirectoryHandler
 import random
 
 import pandas as pd
-
-pwd = str(pathlib.Path().absolute())
-if pwd.split('/')[-1] != 'bacdevice':
-    sys.path.append(pwd+'/..')
-else:
-    sys.path.append(pwd)
 
 
 import thermorasp
