@@ -89,12 +89,13 @@ def store():
     measurements = readout(mymeters)
     for key,values in measurements.items():
         rasp = key.split('-')[0]
-        sensor = key
+        sensor = key.replace('-','_')
         timestamp = [int(time.mktime(values[0].timetuple()))]
         measurement = {'temperature':[values[1]],'pressure':[values[2]],'humidity':[values[3]]}
         df = pd.DataFrame(data=measurement,index=timestamp)
-        print(df)
-#        df.to_hdf('{}.h5'.format(rasp), key=sensor, format='table', append=True)
+#        print(df)
+#        df.to_hdf('{}.h5'.format(rasp), key=sensor, format='table', append=True, complevel=5)
+        df.to_hdf('/home/cleangat/data/cabinet-monitor/{}.h5'.format(rasp), key=sensor, format='table', append=True)
 
 
 @linear()
@@ -280,7 +281,7 @@ if __name__ == "__main__" :
     while True:
         store()
     
-elif __name__.startswith('bk_script'):
+elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     # name starts with bk_script (__name__ = bk_script_<some number>)
     div = Div(text="<img src='cabinet-monitor/static/daf_25c_cabinet_sensors_test.jpg' width='300'>")
     plot = {}
