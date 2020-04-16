@@ -13,7 +13,8 @@ from os import path
 
 pwd = str(pathlib.Path().absolute())
 wd = pwd
-if pwd.split('/')[-1] != 'bacdevice':
+proj_name = pwd.split('/')[-1]
+if proj_name != 'bacdevice':
     wd = pwd+'/..'
 sys.path.append(wd)
 
@@ -22,7 +23,10 @@ logsdir = wd+'/logs'
 import logging
 logger = logging.getLogger ( 'mylivelog' )
 logger.setLevel ( logging.DEBUG )
-fh = logging.FileHandler ( logsdir+'/'+__name__+'_output_live.log' )
+logname = logsdir+'/'+__name__+'_output_live.log'
+if __name__ == '__main__':
+    logname = logsdir+'/'+proj_name+'_output.log'
+fh = logging.FileHandler ( logname )
 fh.setLevel ( logging.DEBUG )
 logger.addHandler ( fh )
 
