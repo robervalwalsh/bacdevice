@@ -15,8 +15,9 @@ pwd = str(pathlib.Path().absolute())
 wd = pwd
 if pwd.split('/')[-1] != 'bacdevice':
     wd = pwd+'/..'
-sys.path.append(pwd)
+sys.path.append(wd)
 
+logsdir = wd+'/logs'
 
 import logging
 logger = logging.getLogger ( 'mylivelog' )
