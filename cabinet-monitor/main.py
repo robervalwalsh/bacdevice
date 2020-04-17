@@ -51,6 +51,11 @@ from bokeh.models.widgets import Div,PreText
 from bokeh.layouts import column,row
 from bokeh.application.handlers.directory import DirectoryHandler
 
+from bokeh.layouts import gridplot
+from bokeh.models import CheckboxGroup
+from bokeh.models import Slider
+from bokeh.models import TextInput
+
 import random
 
 import pandas as pd
@@ -59,8 +64,7 @@ import pandas as pd
 import thermorasp
 METERS = { "thermorasps": thermorasp }
 
-#unixtime = time.time()
-#data = -273.
+global periodic_callback_id
 
 def readout(meters):
     measurements = {}
@@ -105,62 +109,16 @@ def update(step):
     
     for l in location:
         sdate = measurements[sensor[l]][0]
-        stemp = measurements[sensor[l]][1]
-        spres = measurements[sensor[l]][2]
-        shumt = measurements[sensor[l]][3]
+        for idx,key in enumerate(observables):
+            meas = measurements[sensor[l]][idx+1]
+            ds[l][key].data['x'].append(sdate)
+            ds[l][key].data['y'].append(meas)
+            ds[l][key].trigger('data', ds[l][key].data, ds[l][key].data)
         
-        ds[l]['temperature'].data['x'].append(sdate)
-        ds[l]['temperature'].data['y'].append(stemp)
-        ds[l]['temperature'].trigger('data', ds[l]['temperature'].data, ds[l]['temperature'].data)
-        
-        ds[l]['humidity'].data['x'].append(sdate)
-        ds[l]['humidity'].data['y'].append(shumt)
-        ds[l]['humidity'].trigger('data', ds[l]['humidity'].data, ds[l]['humidity'].data)
-    
-        ds[l]['pressure'].data['x'].append(sdate)
-        ds[l]['pressure'].data['y'].append(spres)
-        ds[l]['pressure'].trigger('data', ds[l]['pressure'].data, ds[l]['pressure'].data)
-        
-        deltaT = (ds[l]['temperature'].data['x'][-1] - ds[l]['temperature'].data['x'][0]).seconds
-        if deltaT > 3600:
-            del ds[l]['temperature'].data['x'][0]
-            del ds[l]['temperature'].data['y'][0]
-            del ds[l]['pressure'].data['x'][0]
-            del ds[l]['pressure'].data['y'][0]
-            del ds[l]['humidity'].data['x'][0]
-            del ds[l]['humidity'].data['y'][0]
-    
-#    date1 = measurements['raspberry3-bus1-ch1'][0]
-#    temp1 = measurements['raspberry3-bus1-ch1'][1]
-#    ds1['temperature'].data['x'].append(date1)
-#    ds1['temperature'].data['y'].append(temp1)
-#    ds1['temperature'].trigger('data', ds1['temperature'].data, ds1['temperature'].data)
-#    date2 = measurements['raspberry3-bus4-ch1'][0]
-#    temp2 = measurements['raspberry3-bus4-ch1'][1]
-#    ds2['temperature'].data['x'].append(date2)
-#    ds2['temperature'].data['y'].append(temp2)
-#    ds2['temperature'].trigger('data', ds2['temperature'].data, ds2['temperature'].data)
-#    date3 = measurements['raspberry3-bus4-ch0'][0]
-#    temp3 = measurements['raspberry3-bus4-ch0'][1]
-#    ds3['temperature'].data['x'].append(date3)
-#    ds3['temperature'].data['y'].append(temp3)
-#    ds3['temperature'].trigger('data', ds3['temperature'].data, ds3['temperature'].data)
-    
-#    pre_head2.update(text="     Present values")
-#    pre_temp_top.update(text="     Top sensor tempearture   : {} C".format(temp1))
-#    pre_temp_mid.update(text="     Middle sensor tempearture: {} C".format(temp2))
-#    pre_temp_bot.update(text="     Bottom sensor tempearture: {} C".format(temp3))
-
-    
-#    deltaT = (ds1['temperature'].data['x'][-1]-ds1['temperature'].data['x'][0]).seconds
-#    if  deltaT > 1800:
-#        del ds1['temperature'].data['x'][0] 
-#        del ds1['temperature'].data['y'][0] 
-#        del ds2['temperature'].data['x'][0] 
-#        del ds2['temperature'].data['y'][0] 
-#        del ds3['temperature'].data['x'][0] 
-#        del ds3['temperature'].data['y'][0] 
-#    
+            deltaT = (ds[l][key].data['x'][-1] - ds[l][key].data['x'][0]).seconds
+            if deltaT > max_hours*3600:
+                del ds[l][key].data['x'][0]
+                del ds[l][key].data['y'][0]
     
 
 class DataThread ( threading.Thread ) :
@@ -200,6 +158,51 @@ class DataThread ( threading.Thread ) :
 
     def stop ( self ) :
         self.flag_stop = True
+
+
+def live_toggle(attr,old,new):
+    global periodic_callback_id
+    if len(new) == 1:
+        reload_data()
+        periodic_callback_id = curdoc().add_periodic_callback(update, 10000)
+    else:
+        curdoc().remove_periodic_callback(periodic_callback_id)
+
+def live_hours(attr,old,new):
+    global max_hours
+    try:
+        max_hours = float(new)
+    except:
+        max_hours = float(old)
+    if max_hours > 24:
+        max_hours = 24
+    if max_hours < 0.1:
+        max_hours = 0.1
+    live_hours_input.update(value=str(max_hours))
+    reload_data()
+        
+def reload_data():
+    seldata = readdata()
+    for l in location:
+        sdates = [datetime.fromtimestamp(ts) for ts in list(seldata[l].index)]
+        for key in observables:
+            ds[l][key].data = {'x':sdates, 'y':list(seldata[l][key])}
+            ds[l][key].trigger('data', ds[l][key].data, ds[l][key].data)
+    
+
+def readdata():
+    sdata = {}
+    sel_data = {}
+    for l in location:
+        sdata[sensor[l]] = pd.read_hdf('/home/cleangat/data/cabinet-monitor/raspberry3.h5', sensor[l].replace('-','_'))
+        last_ts = sdata[sensor[l]].iloc[-1].name
+        first_ts = last_ts-max_hours*3600
+        sel_data[l] = sdata[sensor[l]].loc[first_ts:last_ts]
+#        sdates = [datetime.fromtimestamp(ts) for ts in list(sel_data.index)]
+#        stemps = list(sel_data.temperature)
+#        spress = list(sel_data.pressure)
+#        shumts = list(sel_data.humidity)
+    return sel_data
 
 def main ( ) :
     global mymeters
@@ -282,6 +285,8 @@ if __name__ == "__main__" :
         store()
     
 elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
+    max_hours = 1
+
     # name starts with bk_script (__name__ = bk_script_<some number>)
     div = Div(text="<img src='cabinet-monitor/static/daf_25c_cabinet_sensors_test.jpg' width='300'>")
     plot = {}
@@ -292,14 +297,15 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     colors = ['firebrick','navy','green']
     sensors = ['raspberry3-bus1-ch1','raspberry3-bus4-ch1','raspberry3-bus4-ch0']
     location = ['top','middle','bottom']
+    observables = ['temperature','pressure','humidity']
     for i, l in enumerate(location):
         color[l] = colors[i]
         sensor[l] = sensors[i]
         r[l]  = {}
         ds[l] = {}
-    plot['temperature'] = figure(plot_width=500, plot_height=500,x_axis_type="datetime")
-    plot['pressure'] = figure(plot_width=500, plot_height=500,x_axis_type="datetime")
-    plot['humidity'] = figure(plot_width=500, plot_height=500,x_axis_type="datetime")
+    plot[observables[0]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",toolbar_location="above")
+    plot[observables[1]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
+    plot[observables[2]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
     date_format = ['%d %b %Y %H:%M:%S']
     for key, p in plot.items():
         p.xaxis.formatter=DatetimeTickFormatter(
@@ -317,8 +323,11 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
         p.xaxis.major_label_orientation = pi/3
         p.xaxis.axis_label = "Local time"
 
+        seldata = readdata()
         for l in location:
-            r[l][key] = p.line([], [], color=color[l], line_width=2,legend_label=l)
+            sdates = [datetime.fromtimestamp(ts) for ts in list(seldata[l].index)]
+#            r[l][key] = p.line([], [], color=color[l], line_width=2,legend_label=l)
+            r[l][key] = p.line(sdates, list(seldata[l][key]), color=color[l], line_width=2,legend_label=l)
             ds[l][key] = r[l][key].data_source
         p.legend.location = "top_left"
 
@@ -327,6 +336,14 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     plot['pressure'].yaxis.axis_label = "Pressure (hPa)"
     plot['humidity'].yaxis.axis_label = "Relative Humidity (%RH)"
     
+
+    live_checkbox = CheckboxGroup(labels=['Live'], active=[0])
+    live_checkbox.on_change('active',live_toggle)
+    
+    live_hours_input = TextInput(value=str(max_hours), title="Past hours (max. 24h):", width=150)
+    live_hours_input.on_change('value',live_hours)
+#    live_slider = Slider(start=0.01, end=24, value=max_hours, step=0.01, title="Hours before")
+#    live_slider.on_change('value',live_hours)
     
     pre_head = PreText(text="N.B.: Readout every 10 seconds. Be patient!",width=500, height=50)
     pre_head2 = PreText(text="",width=400, height=25)
@@ -338,10 +355,11 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     v_space = PreText(text="",width=1, height=50)
     
 #    curdoc().add_root(column(pre_head,row(div,column(pre_head2,pre_temp_top,pre_temp_mid,pre_temp_bot),column(plot['temperature'],plot['humidity'],plot['pressure']),)))
-    curdoc().add_root(column(pre_head,row(h_space,plot['temperature'],h_space,plot['humidity'],h_space,plot['pressure']), v_space,row(h_space,div)))
+    curdoc().add_root(column(row(h_space,pre_head),row(h_space,live_checkbox),row(h_space,live_hours_input),v_space,row(h_space,plot['temperature'],h_space,plot['humidity'],h_space,plot['pressure']), v_space,row(h_space,div)))
     
+    readdata()
     main()
 #    time.sleep ( 10 )
-    curdoc().add_periodic_callback(update, 10000)
+    periodic_callback_id = curdoc().add_periodic_callback(update, 10000)
 else:
     pass    
