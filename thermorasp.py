@@ -77,6 +77,7 @@ class TermoRasp(threading.Thread):
             meter_names = fields[2:]
 
             readings = lines[1].split(" ")[2:]
+            readings_date = lines[1].split(" ")[0]+' '+lines[1].split(" ")[1]
             for i, name in enumerate(meter_names):
                 try:
                     reading = float(readings[i])
@@ -85,6 +86,7 @@ class TermoRasp(threading.Thread):
                     logger.debug("Invalid or empty value for {} of {} at {}:{}".format(name, self.name, self.host, self.port))
                     continue
                 self.meters[name].present_value = reading
+                self.meters[name].present_date = readings_date
                 self.meters[name].is_connected = True
                 logger.debug("Data from {} at {}:{} at {} is: {}: {}".format(self.name, self.host, self.port, datetime.now(), name, reading))
 

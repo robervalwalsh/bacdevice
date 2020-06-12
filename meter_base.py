@@ -18,3 +18,12 @@ class MeterBase(abc.ABC):
     @abc.abstractmethod
     def getPresentValue(self):
         pass
+    
+    @abc.abstractmethod
+    def getPresentDate(self):
+        pass
+
+    @abc.abstractmethod
+    def getSection(self):
+        pass
+    
