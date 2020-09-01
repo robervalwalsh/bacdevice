@@ -3,10 +3,13 @@
 # Main program to broadcast data points to the DESY BACNet
 # --------------------------------------------------------
 
+# running bokeh server:
+# bokeh serve cabinet-monitor --address fhlcleangate.desy.de --port 5002 --allow-websocket-origin=fhlcleangate.desy.de:5002
+
 import logging
-logger = logging.getLogger ( 'mybaclog' )
+logger = logging.getLogger ( 'mylivelog' )
 logger.setLevel ( logging.DEBUG )
-fh = logging.FileHandler ( 'output.log' )
+fh = logging.FileHandler ( 'output_live.log' )
 fh.setLevel ( logging.DEBUG )
 logger.addHandler ( fh )
 
@@ -20,232 +23,246 @@ from os import path
 import csv
 import os
 import sys
-import datetime
+from datetime import datetime
 import time
 from collections import OrderedDict
+from math import pi
 
-from bacpypes import __version__ as bacpypes_version
-from bacpypes.core import run as bacpypesrun
-from bacpypes.primitivedata import Real, CharacterString, Unsigned, Boolean
-from bacpypes.basetypes import EngineeringUnits
-from bacpypes.object import AnalogInputObject
-from bacpypes.app import BIPSimpleApplication
-from bacpypes.service.device import LocalDeviceObject
-from bacpypes.service.object import ReadWritePropertyMultipleServices
+from bokeh.plotting import figure, curdoc
+from bokeh.driving import linear
+from bokeh.models import DatetimeTickFormatter
+from bokeh.models.widgets import Div,PreText
+from bokeh.layouts import column,row
 
-import dustmeter
+import random
+
+
+
 import thermorasp
-import pumpstation
-#METERS = { "dustmeters": dustmeter, "thermorasps": thermorasp, "pumpstations": pumpstation }
-METERS = { "thermorasps": thermorasp, "pumpstations": pumpstation, "dustmeters": dustmeter  }
+METERS = { "thermorasps": thermorasp }
+
+#unixtime = time.time()
+#data = -273.
+
+def readout(meters):
+    global unixtime
+    global data
+#    time.sleep ( 10 )
+    measurements = {}
+    for meter in meters :
+        section = meter.getSection()
+        if not section in measurements:
+            measurements[section] = [None]*4
+        fname = meter.name
+        outputvar = meter.getPresentValue ( )
+        measurements[section][0] = datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S.%f') .replace ( microsecond = 0 )
+        if 'temp' in fname:
+            measurements[section][1] = outputvar
+        elif 'pres' in fname:
+            measurements[section][2] = outputvar
+        elif 'hum' in fname:
+            measurements[section][3] = outputvar
+        else:
+            print('Invalid measurement for ',fname)
+            continue
+
+        var_date = datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S.%f') .replace ( microsecond = 0 )
+
+    unixtime = int(time.time())
+    data = measurements['raspberry3-bus1-ch1'][1]
+    point  = [var_date,data]
+#    print(measurements)
+    return measurements
 
 
-inst_nr = dict()
+@linear()
+def update(step):
+    measurements = readout(mymeters)
+    # datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+    date1 = measurements['raspberry3-bus1-ch1'][0]
+    temp1 = measurements['raspberry3-bus1-ch1'][1]
+    ds1.data['x'].append(date1)
+    ds1.data['y'].append(temp1)
+    ds1.trigger('data', ds1.data, ds1.data)
+    date2 = measurements['raspberry3-bus4-ch1'][0]
+    temp2 = measurements['raspberry3-bus4-ch1'][1]
+    ds2.data['x'].append(date2)
+    ds2.data['y'].append(temp2)
+    ds2.trigger('data', ds2.data, ds2.data)
+    date3 = measurements['raspberry3-bus4-ch0'][0]
+    temp3 = measurements['raspberry3-bus4-ch0'][1]
+    ds3.data['x'].append(date3)
+    ds3.data['y'].append(temp3)
+    ds3.trigger('data', ds3.data, ds3.data)
+    
+    pre_head2.update(text="     Present values")
+    pre_temp_top.update(text="     Top sensor tempearture   : {} C".format(temp1))
+    pre_temp_mid.update(text="     Middle sensor tempearture: {} C".format(temp2))
+    pre_temp_bot.update(text="     Bottom sensor tempearture: {} C".format(temp3))
 
-inst_nr["dustmeter_a27_dust_small"]           = 1
-inst_nr["dustmeter_a27_dust_large"]           = 2
-inst_nr["dustmeter_a40_dust_small"]           = 3
-inst_nr["dustmeter_a40_dust_large"]           = 4
-inst_nr["dustmeter_a43_dust_small"]           = 5
-inst_nr["dustmeter_a43_dust_large"]           = 6
-inst_nr["dustmeter_a49_dust_small"]           = 7
-inst_nr["dustmeter_a49_dust_large"]           = 8
-inst_nr["dustmeter_a57_dust_small"]           = 9
-inst_nr["dustmeter_a57_dust_large"]           = 10
-
-inst_nr["pumpstation1_PSYS"]                  = 11
-inst_nr["pumpstation1_P1"]                    = 12
-inst_nr["pumpstation1_P2"]                    = 13
-inst_nr["pumpstation1_PUMP1STATUS"]           = 14
-inst_nr["pumpstation1_PUMP2STATUS"]           = 15
-inst_nr["pumpstation1_V1"]                    = 16
-inst_nr["pumpstation1_V2"]                    = 17
-inst_nr["pumpstation1_V3"]                    = 18
-inst_nr["pumpstation1_PUMP1HOURS"]            = 19
-inst_nr["pumpstation1_PUMP2HOURS"]            = 20
-
-inst_nr["raspberry2_BME680_i2c-0_0x77_temp"]  = 21
-inst_nr["raspberry2_BME680_i2c-0_0x77_hum"]   = 22
-inst_nr["raspberry2_BME680_i2c-0_0x77_pres"]  = 23
-inst_nr["raspberry3_BME680_i2c-0_0x77_temp"]  = 24
-inst_nr["raspberry3_BME680_i2c-0_0x77_hum"]   = 25
-inst_nr["raspberry3_BME680_i2c-0_0x77_pres"]  = 26
-inst_nr["raspberry4_BME680_i2c-0_0x77_temp"]  = 27
-inst_nr["raspberry4_BME680_i2c-0_0x77_hum"]   = 28
-inst_nr["raspberry4_BME680_i2c-0_0x77_pres"]  = 29
-inst_nr["raspberry5_BME680_i2c-0_0x77_temp"]  = 30
-inst_nr["raspberry5_BME680_i2c-0_0x77_hum"]   = 31
-inst_nr["raspberry5_BME680_i2c-0_0x77_pres"]  = 32
-
+    
+    deltaT = (ds1.data['x'][-1]-ds1.data['x'][0]).seconds
+    if  deltaT > 1800:
+        del ds1.data['x'][0] 
+        del ds1.data['y'][0] 
+        del ds2.data['x'][0] 
+        del ds2.data['y'][0] 
+        del ds3.data['x'][0] 
+        del ds3.data['y'][0] 
+    
+    
 
 class DataThread ( threading.Thread ) :
-	def __init__ ( self, meters, objs ) :
-		threading.Thread.__init__ ( self )
-		threading.Thread.setName ( self, "dataThread" )
-		self.meters = meters
-		self.objs = objs
-		self.flag_stop = False
+    def __init__ ( self, meters ) :
+        threading.Thread.__init__ ( self )
+        threading.Thread.setName ( self, "dataThread" )
+        self.meters = meters
+        self.flag_stop = False
 
-	def run ( self ) :
-		while not self.flag_stop :
-			time.sleep ( 10 )
-			for obj in self.objs :
-				objname = str ( obj._values["objectName"] )
-				for meter in self.meters :
-					if meter.name == objname :
-						obj._values["outOfService"] = Boolean ( not meter.is_connected )
-						obj._values["presentValue"] = Real ( meter.getPresentValue ( ) )
-						fname = objname
-#						output_csv = os.path.join ( str ( '/home/cleangat/scratch/bacdevice/csv' ), fname + u".csv" )
-						output_csv = os.path.join ( str ( '/var/www/html' ), fname + u".csv" )
-						mode = 'a'
-						if sys.version_info.major < 3:
-							mode += 'b'
-						with open ( output_csv, mode ) as f :
-							writer = csv.writer ( f, delimiter = ',' )
-							outputvar = meter.getPresentValue ( )
-							writer.writerow ( [datetime.datetime.now ( ) .replace ( microsecond = 0 ) .isoformat ( " " ), outputvar] )
-							f.close ( )
+    def run ( self ) :
+        while not self.flag_stop :
+            time.sleep ( 10 )
+            measurements = {}
+            for meter in self.meters :
+                section = meter.getSection()
+                if not section in measurements:
+                    measurements[section] = [None]*3
+                fname = meter.name
+                outputvar = meter.getPresentValue ( )
+                if 'temp' in fname:
+                    measurements[section][0] = outputvar
+                elif 'pres' in fname:
+                    measurements[section][1] = outputvar
+                elif 'hum' in fname:
+                    measurements[section][2] = outputvar
+                else:
+                    print('Invalid measurement for ',fname)
+                    continue
+                    
+                var_date = datetime.datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S.%f') .replace ( microsecond = 0 )
+                
+            unixtime = int(time.time())
+            data = measurements['raspberry3-bus1-ch1'][0]
 
+            print(unixtime,data)
+            print('---')
 
-	def stop ( self ) :
-		self.flag_stop = True
+    def stop ( self ) :
+        self.flag_stop = True
 
 def main ( ) :
-	tmp_nr = 1000
+    global mymeters
 
-	if not path.exists ( "server.cfg" ) :
-		logger.error ( "Error: File server.cfg not found." )
-		exit ( 1 )
 
-	cparser = configparser.ConfigParser ( )
-	cparser.read ( "server.cfg" )
+    if not path.exists ( "cabinet-monitor/server.cfg" ) :
+        logger.error ( "Error: File server.cfg not found." )
+        exit ( 1 )
 
-	if not "server" in cparser :
-		logger.error ( "Invalid config: No server section" )
-		exit ( 1 )
+    cparser = configparser.ConfigParser ( )
+    cparser.read ( "cabinet-monitor/server.cfg" )
 
-	required_keys = { "ip", "port", "objectname", "vendoridentifier", "location", "vendorname", "modelname", "description" }
-	missing_keys = required_keys - set ( cparser["server"].keys ( ) )
-	if len ( missing_keys ) != 0 :
-		logger.error ( "Missing config keys in server section: " + ( " ".join ( missing_keys ) ) )
-		exit ( 1 )
+    if not "server" in cparser :
+        logger.error ( "Invalid config: No server section" )
+        exit ( 1 )
 
-	device_info = {
-		'ip' : cparser["server"]["ip"],
-		'netmask' : 23,
-		'port' : cparser["server"]["port"],
-		'objectName' : cparser["server"]["objectName"],
-		'objectIdentifier' : 522020,
-		'vendorIdentifier' : int ( cparser["server"]["vendorIdentifier"] ),
-		'location' : cparser["server"]["location"],
-		'vendorName' : cparser["server"]["vendorName"],
-		'modelName' : cparser["server"]["modelName"],
-		'softwareVersion' : "bacpypes_{}_python{}.{}.{}" .format ( bacpypes_version, version_info[0], version_info[1], version_info[2] ),
-		'description': cparser["server"]["description"]
-	}
+    required_keys = { "ip", "port", "objectname", "vendoridentifier", "location", "vendorname", "modelname", "description" }
+    missing_keys = required_keys - set ( cparser["server"].keys ( ) )
+    if len ( missing_keys ) != 0 :
+        logger.error ( "Missing config keys in server section: " + ( " ".join ( missing_keys ) ) )
+        exit ( 1 )
 
-	logger.info ( "=== INIT ===" )
-	logger.info ( device_info )
+    meters_active = []
+    ai_objs = []
+    idx = 1
 
-	this_device = LocalDeviceObject ( objectName=device_info["objectName"], objectIdentifier=device_info["objectIdentifier"], vendorIdentifier=device_info["vendorIdentifier"] )
+    logger.info ( "Initializing meters..." )
+    for key, metermodule in sorted(METERS.items(),reverse=True) :
+        if not key in cparser["server"] :
+            logger.warning ( "No key '{}' in config server section. Skipping" .format ( key ) )
+            continue
+        metersections = cparser["server"][key].split ( )
+        missing_metersections = set ( metersections ) - set ( cparser.keys ( ) )
+        if len ( missing_metersections ) != 0 :
+            logger.error ( "Missing config sections for meters: " + "" .join ( missing_metersections ) )
+            exit ( 1 )
 
-	this_device._values['location'] = CharacterString ( device_info['location'] )
-	this_device._values['vendorName'] = CharacterString ( device_info['vendorName'] )
-	this_device._values['modelName'] = CharacterString ( device_info['modelName'] )
-	this_device._values['applicationSoftwareVersion'] = CharacterString ( device_info['softwareVersion'] )
-	this_device._values['description'] = CharacterString ( device_info['description'] )
+        for metersection in metersections :
+            info = cparser[metersection]
 
-	this_addr = str ( device_info['ip'] + '/' + str ( device_info['netmask'] ) + ':' + str ( device_info['port'] ) )
-	logger.info ( "bacnet server will listen at {}" .format ( this_addr ) )
-	this_application = BIPSimpleApplication ( this_device, this_addr )
-	this_application.add_capability ( ReadWritePropertyMultipleServices )
-	this_device.protocolServicesSupported = this_application.get_services_supported ( ) .value
+            # for a sensor there is three meters: temp, hum, pres
+            # code is for one sensor in one raspberry
+            ms = metermodule.getMeters ( info )
+            logger.info ( "Got {} meter(s) from {}" .format ( len ( ms ), metersection ) )
+            meters_active.extend ( ms )
 
-	meters_active = []
-	ai_objs = []
-	idx = 1
+            for m in ms :
+                m.name = "{}_{}" .format ( metersection, m.name )
+                m.section = metersection
+                    
+                idx += 1
 
-	logger.info ( "Initializing meters..." )
-	for key, metermodule in sorted(METERS.items(),reverse=True) :
-		if not key in cparser["server"] :
-			logger.warning ( "No key '{}' in config server section. Skipping" .format ( key ) )
-			continue
-		metersections = cparser["server"][key].split ( )
-		missing_metersections = set ( metersections ) - set ( cparser.keys ( ) )
-		if len ( missing_metersections ) != 0 :
-			logger.error ( "Missing config sections for meters: " + "" .join ( missing_metersections ) )
-			exit ( 1 )
+                fname = m.name
 
-		for metersection in metersections :
-			info = cparser[metersection]
+    mymeters = meters_active
+    for m in meters_active :
+        m.start ( )
 
-			ms = metermodule.getMeters ( info )
-			logger.info ( "Got {} meter(s) from {}" .format ( len ( ms ), metersection ) )
-			meters_active.extend ( ms )
+#    datathread = DataThread ( meters_active )
+#    datathread.start ( )
 
-			for m in ms :
-				m.name = "{}_{}" .format ( metersection, m.name )
-				if m.name in inst_nr:
-					my_nr = inst_nr[m.name]
-				else:
-					my_nr = tmp_nr
-					tmp_nr+=1
-					
-				ai_obj = AnalogInputObject ( objectIdentifier = ( "analogInput", my_nr ), objectName = m.name )
-				print("idx = ", idx, "  inst nr = ",my_nr ," name = ",m.name) 
-				if "description" in info :
-					ai_obj._values["description"] = CharacterString ( info["description"] )
-				if "deviceType" in info :
-					ai_obj._values["deviceType"] = CharacterString ( info["deviceType"] )
-				ai_obj._values["units"] = EngineeringUnits ( "noUnits" )
-				if "updateInterval" in info :
-					try :
-						updateInterval = int ( info["updateInterval"] )
-						if updateInterval < 0 :
-							raise ValueError ( "Invalid negative value :" + info["updateInterval"] )
-					except ValueError as e :
-						logger.error ( "Value of updateInterval in section {}: {}" .format ( metersection, e ) )
-						exit ( 1 )
-					ai_obj._values["updateInterval"] = Unsigned ( updateInterval )
-				if "resolution" in info :
-					try :
-						resolution = float ( info["resolution"] )
-					except ValueError as e :
-						logger.error ( "Value of updateInterval in section {}: {}" .format ( metersection, e ) )
-						exit ( 1 )
-					ai_obj._values["resolution"] = Real ( resolution )
-				this_application.add_object ( ai_obj )
-				ai_objs.append ( ai_obj )
+    
+#    while True:
+#        pass
+    
+#    datathread.stop ( )
+#    datathread.join ( )
 
-				idx += 1
-
-				fname = m.name
-				output_csv = os.path.join ( str ( '/var/www/html' ), fname + u".csv" )
-				mode = 'a'
-				if sys.version_info.major < 3:
-					mode += 'b'
-				with open ( output_csv, mode ) as f :
-					header = OrderedDict ( [ ( '# time', None ), ( m.name, None ) ] )
-					writer = csv.DictWriter ( f, fieldnames = header, extrasaction = u"ignore" )
-					writer.writeheader ( )
-
-					f.close ( )
-
-	for m in meters_active :
-                   m.start ( )
-
-	datathread = DataThread ( meters_active, ai_objs )
-	datathread.start ( )
-
-	bacpypesrun ( )
-
-	datathread.stop ( )
-	datathread.join ( )
-
-	for m in meters_active :
-		m.stop ( )
-		m.join ( )
+#    for m in meters_active :
+#        m.stop ( )
+#        m.join ( )
 
 if __name__ == "__main__" :
-	main ( )
+    main ( )
+else:
+    div = Div(text="<img src='cabinet-monitor/static/daf_25c_cabinet_sensors_test.jpg' width='300'>")
+    p = figure(plot_width=800, plot_height=500,x_axis_type="datetime")
+    date_format = ['%d %b %Y %H:%M:%S']
+    p.xaxis.formatter=DatetimeTickFormatter(
+           microseconds=date_format,
+           milliseconds=date_format,
+           seconds=date_format,
+           minsec=date_format,
+           minutes=date_format,
+           hourmin=date_format,
+           hours=date_format,
+           days=date_format,
+           months=date_format,
+           years=date_format
+    )
+    p.xaxis.major_label_orientation = pi/3
+    p.xaxis.axis_label = "Local time"
+    p.yaxis.axis_label = "Temperature (C)"
+    
+    r1 = p.line([], [], color="firebrick", line_width=2,legend_label='top')
+    r2 = p.line([], [], color="navy", line_width=2,legend_label='middle')
+    r3 = p.line([], [], color="green", line_width=2,legend_label='bottom')
+    
+    p.legend.location = "top_left"
+
+
+    ds1 = r1.data_source
+    ds2 = r2.data_source
+    ds3 = r3.data_source
+    
+    pre_head = PreText(text="N.B.: Readout every 10 seconds. Be patient!",width=500, height=50)
+    pre_head2 = PreText(text="",width=400, height=25)
+    pre_temp_top = PreText(text="",width=400, height=20)
+    pre_temp_mid = PreText(text="",width=400, height=20)
+    pre_temp_bot = PreText(text="",width=400, height=20)
+    
+    curdoc().add_root(column(pre_head,row(div,column(pre_head2,pre_temp_top,pre_temp_mid,pre_temp_bot),p,)))
+    
+    main()
+#    time.sleep ( 10 )
+    curdoc().add_periodic_callback(update, 10000)
+    
