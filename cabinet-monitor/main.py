@@ -40,6 +40,7 @@ from uuid import getnode
 import csv
 import sys
 from datetime import datetime
+from datetime import date
 import time
 from collections import OrderedDict
 from math import pi
@@ -55,6 +56,9 @@ from bokeh.layouts import gridplot
 from bokeh.models import CheckboxGroup
 from bokeh.models import Slider
 from bokeh.models import TextInput
+from bokeh.models import DatePicker
+
+from bokeh.models import Button
 
 import random
 
@@ -162,11 +166,44 @@ class DataThread ( threading.Thread ) :
 
 def live_toggle(attr,old,new):
     global periodic_callback_id
+#    datepicker_status()
     if len(new) == 1:
         reload_data()
         periodic_callback_id = curdoc().add_periodic_callback(update, 10000)
     else:
         curdoc().remove_periodic_callback(periodic_callback_id)
+    
+def datepicker_status(attr,old,new):
+    date_picker_i.value = new
+    live_checkbox.active = []
+    print(date_picker_i.value,date_picker_f.value, live_checkbox.active)
+
+def initial_date(attr,old,new):
+    date_picker_i.value = new
+
+def final_date(attr,old,new):
+    date_picker_f.value = new
+
+def get_history():
+
+### FIX ME
+#    global periodic_callback_id
+    live_checkbox.active = []
+#    curdoc().remove_periodic_callback(periodic_callback_id)
+#    print(periodic_callback_id)
+    sdata = {}
+    sel_data = {}
+    for l in location:
+        sdata[sensor[l]] = pd.read_hdf('/home/cleangat/data/cabinet-monitor/raspberry3.h5', sensor[l].replace('-','_'))
+        last_ts = sdata[sensor[l]].iloc[-1].name
+        first_ts = sdata[sensor[l]].iloc[0].name
+        first_ts = last_ts-72*3600
+        sel_data[l] = sdata[sensor[l]].loc[first_ts:last_ts]
+        
+        sdates = [datetime.fromtimestamp(ts) for ts in list(seldata[l].index)]
+        for key in observables:
+            ds[l][key].data = {'x':sdates, 'y':list(seldata[l][key])}
+            ds[l][key].trigger('data', ds[l][key].data, ds[l][key].data)
 
 def live_hours(attr,old,new):
     global max_hours
@@ -195,14 +232,25 @@ def readdata():
     sel_data = {}
     for l in location:
         sdata[sensor[l]] = pd.read_hdf('/home/cleangat/data/cabinet-monitor/raspberry3.h5', sensor[l].replace('-','_'))
+        # remove possible duplicates (not sure why there are duplicates)
+        sdata[sensor[l]] = sdata[sensor[l]].loc[~sdata[sensor[l]].index.duplicated(keep='first')]
+        # reindex
+        sdata[sensor[l]] = sdata[sensor[l]].sort_index()
         last_ts = sdata[sensor[l]].iloc[-1].name
-        first_ts = last_ts-max_hours*3600
+        # get the nearest index
+        first_idx = sdata[sensor[l]].index.get_loc(last_ts-max_hours*3600, method='nearest')
+        # get the initial timestamp
+        first_ts = sdata[sensor[l]].iloc[first_idx].name
         sel_data[l] = sdata[sensor[l]].loc[first_ts:last_ts]
+
 #        sdates = [datetime.fromtimestamp(ts) for ts in list(sel_data.index)]
 #        stemps = list(sel_data.temperature)
 #        spress = list(sel_data.pressure)
 #        shumts = list(sel_data.humidity)
     return sel_data
+
+#def datei_changed(attr,old,new):
+
 
 def main ( ) :
     global mymeters
@@ -327,7 +375,8 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
         for l in location:
             sdates = [datetime.fromtimestamp(ts) for ts in list(seldata[l].index)]
 #            r[l][key] = p.line([], [], color=color[l], line_width=2,legend_label=l)
-            r[l][key] = p.line(sdates, list(seldata[l][key]), color=color[l], line_width=2,legend_label=l)
+#            r[l][key] = p.line(sdates, list(seldata[l][key]), color=color[l], line_width=2,legend_label=l)
+            r[l][key] = p.circle(sdates, list(seldata[l][key]), fill_color=color[l], line_color=color[l], size=4,legend_label=l)
             ds[l][key] = r[l][key].data_source
         p.legend.location = "top_left"
 
@@ -337,13 +386,25 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     plot['humidity'].yaxis.axis_label = "Relative Humidity (%RH)"
     
 
-    live_checkbox = CheckboxGroup(labels=['Live'], active=[0])
+    live_checkbox = CheckboxGroup(labels=['Live'], active=[0], width=150)
     live_checkbox.on_change('active',live_toggle)
     
-    live_hours_input = TextInput(value=str(max_hours), title="Past hours (max. 24h):", width=150)
+    live_hours_input = TextInput(value=str(max_hours), title="Live past hours (max. 24h):", width=150)
     live_hours_input.on_change('value',live_hours)
+    
 #    live_slider = Slider(start=0.01, end=24, value=max_hours, step=0.01, title="Hours before")
 #    live_slider.on_change('value',live_hours)
+    
+    # pick a date
+    date_picker_i = DatePicker(value=date.today(),max_date=date.today(), title='Choose inital date:', width=150, disabled=False)
+    mydate_i=date_picker_i.value
+    date_picker_f = DatePicker(value=date.today(),max_date=date.today(), title='Choose final date:' , width=150, disabled=False)
+    mydate_f=date_picker_f.value
+    date_picker_i.on_change('value',initial_date)
+    date_picker_f.on_change('value',final_date)
+    
+    hist_button = Button(label="Show History", button_type="default", width=310)
+    hist_button.on_click(get_history)
     
     pre_head = PreText(text="N.B.: Readout every 10 seconds. Be patient!",width=500, height=50)
     pre_head2 = PreText(text="",width=400, height=25)
@@ -355,7 +416,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     v_space = PreText(text="",width=1, height=50)
     
 #    curdoc().add_root(column(pre_head,row(div,column(pre_head2,pre_temp_top,pre_temp_mid,pre_temp_bot),column(plot['temperature'],plot['humidity'],plot['pressure']),)))
-    curdoc().add_root(column(row(h_space,pre_head),row(h_space,live_checkbox),row(h_space,live_hours_input),v_space,row(h_space,plot['temperature'],h_space,plot['humidity'],h_space,plot['pressure']), v_space,row(h_space,div)))
+    curdoc().add_root(column(row(h_space,pre_head),row(h_space,live_hours_input, h_space, h_space, date_picker_i, date_picker_f), row(h_space,live_checkbox,h_space, h_space, hist_button),v_space,row(h_space,plot['temperature'],h_space,plot['humidity'],h_space,plot['pressure']), v_space,row(h_space,div)))
     
     readdata()
     main()
