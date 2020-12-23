@@ -99,7 +99,6 @@ def store():
         rasp = key.split('-')[0]
         sensor = key.replace('-','_')
         timestamp = [int(time.mktime(values[0].timetuple()))]
-        print(values[0])
 #        measurement = {'temperature':[values[1]],'pressure':[values[2]],'humidity':[values[3]]}
 #        df = pd.DataFrame(data=measurement,index=timestamp)
         measurement = {'time':[values[0]],'temperature':[values[1]],'pressure':[values[2]],'humidity':[values[3]]}
@@ -108,7 +107,7 @@ def store():
 #        print(df)
 #        df.to_hdf('{}.h5'.format(rasp), key=sensor, format='table', append=True, complevel=5)
 #        df.to_hdf('/home/walsh/data/infrared-setup/{}.h5'.format(rasp), key=sensor, format='table', append=True)
-        df.to_csv('/home/walsh/data/infrared-setup/{}.csv'.format(rasp), mode='a', header=False, index=False)
+        df.to_csv('/home/walsh/data/infrared-setup/{}.csv'.format(sensor), mode='a', header=False, index=False)
 
 
 @linear()
