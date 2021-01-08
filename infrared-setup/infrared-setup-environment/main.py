@@ -65,19 +65,66 @@ def final_date(attr,old,new):
     date_picker_f.value = new
 
 def get_history():
-    sdata = {}
+    mydate_i=date_picker_i.value
+    mydate_f=date_picker_f.value
+    idate = datetime.strptime(mydate_i+' 00:00:00', '%Y-%m-%d %H:%M:%S')
+    fdate = datetime.strptime(mydate_f+' 23:59:59', '%Y-%m-%d %H:%M:%S')
+    its = int((idate - datetime(1970, 1, 1)).total_seconds())
+    fts = int((fdate - datetime(1970, 1, 1)).total_seconds())
     sel_data = {}
     for l in location:
-        sdata[sensor[l]] = pd.read_hdf('/home/walsh/data/infrared-setup/raspberryX.h5', sensor[l].replace('-','_'))
-        last_ts = sdata[sensor[l]].iloc[-1].name
-        first_ts = sdata[sensor[l]].iloc[0].name
-        first_ts = last_ts-72*3600
-        sel_data[l] = sdata[sensor[l]].loc[first_ts:last_ts]
+        last_idx = alldata[l].index.get_loc(fts, method='nearest')
+        last_ts = alldata[l].iloc[last_idx].name
+        first_idx = alldata[l].index.get_loc(its, method='nearest')
+        first_ts = alldata[l].iloc[first_idx].name
+        if fts-last_ts > 24*3600:
+            continue 
         
-        sdates = [datetime.fromtimestamp(ts) for ts in list(seldata[l].index)]
+        sel_data[l] = alldata[l].loc[first_ts:last_ts]
+        
+        if first_ts < its:
+            sel_data[l] = sel_data[l][1:]
+        if last_ts > fts:
+            sel_data[l] = sel_data[l][:-1]
+        
+        sdates = [datetime.fromtimestamp(ts) for ts in list(sel_data[l].index)]
         for key in observables:
-            ds[l][key].data = {'x':sdates, 'y':list(seldata[l][key])}
+            ds[l][key].data = {'x':sdates, 'y':list(sel_data[l][key])}
             ds[l][key].trigger('data', ds[l][key].data, ds[l][key].data)
+    
+#     sdata = {}
+#     sel_data = {}
+#     for l in location:
+#         sdata[sensor[l]] = pd.read_hdf('/home/walsh/data/infrared-setup/raspberryX.h5', sensor[l].replace('-','_'))
+#         last_ts = sdata[sensor[l]].iloc[-1].name
+#         first_ts = sdata[sensor[l]].iloc[0].name
+#         first_ts = last_ts-72*3600
+#         sel_data[l] = sdata[sensor[l]].loc[first_ts:last_ts]
+#         
+#         sdates = [datetime.fromtimestamp(ts) for ts in list(seldata[l].index)]
+#         for key in observables:
+#             ds[l][key].data = {'x':sdates, 'y':list(seldata[l][key])}
+#             ds[l][key].trigger('data', ds[l][key].data, ds[l][key].data)
+
+def initialdata():
+    # FIXME: check if alldata is available, otherwise readdata
+    sel_data = {}
+    for l in location:
+        now_ts = int(time.time())
+        last_idx = alldata[l].index.get_loc(now_ts, method='nearest')
+        last_ts = alldata[l].iloc[last_idx].name
+        if now_ts-last_ts > max_hours*3600:
+            continue
+            
+        # get the nearest index max_hours before
+        first_idx = alldata[l].index.get_loc(last_ts-max_hours*3600, method='nearest')
+        # get the first timestamp
+        first_ts = alldata[l].iloc[first_idx].name
+        # get selected data
+        sel_data[l] = alldata[l].loc[first_ts:last_ts]
+        
+    return sel_data
+        
 
 
 @linear()
@@ -126,26 +173,6 @@ def readdata():
     return sel_data
 
 
-def initialdata():
-    # FIXME: check if alldata is available, otherwise readdata
-    sel_data = {}
-    for l in location:
-        now_ts = int(time.time())
-        last_idx = alldata[l].index.get_loc(now_ts, method='nearest')
-        last_ts = alldata[l].iloc[last_idx].name
-        if now_ts-last_ts > max_hours*3600:
-            continue
-            
-        # get the nearest index max_hours before
-        first_idx = alldata[l].index.get_loc(last_ts-max_hours*3600, method='nearest')
-        # get the first timestamp
-        first_ts = alldata[l].iloc[first_idx].name
-        # get selected data
-        sel_data[l] = alldata[l].loc[first_ts:last_ts]
-        
-    return sel_data
-        
-
 def main () :
     print('This is a bokeh server application')
 
@@ -160,7 +187,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     # read data from the files
     directory = '/home/walsh/data/infrared-setup'
 
-    max_hours = 36
+    max_hours = 1
     plot = {}
     r = {}
     ds = {}
@@ -179,7 +206,6 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
         
     alldata = readdata()
     inidata = initialdata()
-    print(inidata)
         
     plot[observables[0]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",toolbar_location="above")
     plot[observables[1]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
@@ -233,7 +259,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     hist_button.on_click(get_history)
     
     
-    pre_head = PreText(text="N.B.: Readout every 10 seconds. Be patient!",width=500, height=50)
+    pre_head = PreText(text="N.B.: A wide date range may take a long time to plot. Be patient!",width=500, height=50)
     pre_head2 = PreText(text="",width=400, height=25)
     pre_temp_top = PreText(text="",width=400, height=20)
     pre_temp_mid = PreText(text="",width=400, height=20)
