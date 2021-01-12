@@ -58,6 +58,29 @@ import numpy as np
 
 global periodic_callback_id
 
+def dew_point(t,rh):
+# refs:
+# https://iridl.ldeo.columbia.edu/dochelp/QA/Basic/dewpoint.html
+# https://journals.ametsoc.org/view/journals/bams/86/2/bams-86-2-225.xml
+    Rw = 461.5
+    tk = t+273.15
+    L = vapour_enthalpy(tk)
+    td = tk/(1.-tk*np.log(rh/100)/(L/Rw))
+    td -= 273.15
+    return td
+    
+def vapour_enthalpy(t):
+# refs:
+# https://journals.ametsoc.org/view/journals/bams/86/2/bams-86-2-225.xml
+    t1 = 273.15
+    L1 = 2.501E6
+    t2 = 373.15
+    L2 = 2.257E6
+    b = (L1-L2)/(t1-t2)
+    a = L1 - b*t1
+    L = a + b*(t)
+    return L
+
 def initial_date(attr,old,new):
     date_picker_i.value = new
 
@@ -151,6 +174,9 @@ def readdata():
         sdata[sensor[l]] = sdata[sensor[l]].loc[~sdata[sensor[l]].index.duplicated(keep='first')]
         # reindex
         sdata[sensor[l]] = sdata[sensor[l]].sort_index()
+        
+        sdata[sensor[l]]["dewpoint"] = dew_point(sdata[sensor[l]]["temperature"],sdata[sensor[l]]["humidity"])
+        
  
 ## MOVED TO INITIALDATA        
 #         # index of the last timestamp
@@ -197,7 +223,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     colors = ['firebrick','navy','green','lightblue','magenta','lightgreen','red','blue','black']
     sensors = ['raspberry7_bus1_ch1','raspberry7_bus4_ch1','raspberry7_bus5_ch1','raspberry7_bus6_ch1','raspberry8_bus1_ch1','raspberry8_bus4_ch1','raspberry8_bus5_ch1','raspberry8_bus6_ch1','raspberry9_bus1_ch1']
     location = ['sensor #1','sensor #2','sensor #3','sensor #4','sensor #5','sensor #6','sensor #7','sensor #8','ref sensor']
-    observables = ['temperature','pressure','humidity']
+    observables = ['dewpoint','temperature','pressure','humidity']
     for i, l in enumerate(location):
         color[l] = colors[i]
         sensor[l] = sensors[i]
@@ -210,6 +236,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     plot[observables[0]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",toolbar_location="above")
     plot[observables[1]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
     plot[observables[2]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
+    plot[observables[3]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
     date_format = ['%d %b %Y %H:%M:%S']
     for key, p in plot.items():
         p.xaxis.formatter=DatetimeTickFormatter(
@@ -241,6 +268,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
 
         
 
+    plot['dewpoint'].yaxis.axis_label = "Dew Point (C)"
     plot['temperature'].yaxis.axis_label = "Temperature (C)"
     plot['pressure'].yaxis.axis_label = "Pressure (hPa)"
     plot['humidity'].yaxis.axis_label = "Relative Humidity (%RH)"
@@ -269,7 +297,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     v_space = PreText(text="",width=1, height=50)
     
     
-    curdoc().add_root(column(row(h_space,pre_head),row(h_space, date_picker_i, date_picker_f), row(h_space, hist_button),v_space,row(h_space,plot['temperature'],h_space,plot['humidity'],h_space,plot['pressure']), v_space))
+    curdoc().add_root(column(row(h_space,pre_head),row(h_space, date_picker_i, date_picker_f), row(h_space, hist_button),v_space,row(h_space,plot['dewpoint'],h_space,plot['temperature']), v_space,row(h_space,plot['humidity'],h_space,plot['pressure']), v_space))
     
 #    readdata()
 #    main()
