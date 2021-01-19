@@ -163,8 +163,8 @@ def readdata():
             continue
             
         sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","temperature","pressure","humidity"),parse_dates=[0],infer_datetime_format=True)
-        # select only every n-th row
-#        sdata[sensor[l]] = sdata[sensor[l]].iloc[::50, :]
+        # select only every n-th row: skip rows
+        sdata[sensor[l]] = sdata[sensor[l]].iloc[::20, :]
         # convert datetime to unix timestamp (FIXME: check timezone)
         sdata[sensor[l]]["timestamp"] = pd.DatetimeIndex ( sdata[sensor[l]]["datetime"] ).astype ( np.int64 )/1000000000
         sdata[sensor[l]]["timestamp"] = sdata[sensor[l]]["timestamp"].astype(int)
