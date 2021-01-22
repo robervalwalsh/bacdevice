@@ -221,8 +221,9 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     sensor = {}
     # FIX ME! Need more colors
     colors = ['firebrick','navy','green','lightblue','magenta','lightgreen','red','blue','black']
-    sensors = ['raspberry7_bus1_ch1','raspberry7_bus4_ch1','raspberry7_bus5_ch1','raspberry7_bus6_ch1','raspberry8_bus1_ch1','raspberry8_bus4_ch1','raspberry8_bus5_ch1','raspberry8_bus6_ch1','raspberry9_bus1_ch1']
-    location = ['sensor #1','sensor #2','sensor #3','sensor #4','sensor #5','sensor #6','sensor #7','sensor #8','ref sensor']
+    sensors = ['raspberry7_bus1_ch1','raspberry7_bus4_ch1','raspberry7_bus6_ch1','raspberry7_bus5_ch1','raspberry8_bus5_ch1','raspberry8_bus6_ch1','raspberry8_bus4_ch1','raspberry8_bus1_ch1','raspberry9_bus1_ch1']
+#    location = ['sensor #1','sensor #2','sensor #3','sensor #4','sensor #5','sensor #6','sensor #7','sensor #8','ref sensor']
+    location = ['centre-bottom','right-bottom','right-middle','right-top','centre-top','left-top','left-middle','left-bottom','reference']
     observables = ['dewpoint','temperature','pressure','humidity']
     for i, l in enumerate(location):
         color[l] = colors[i]
