@@ -163,6 +163,7 @@ def readdata():
             continue
             
         sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","temperature","pressure","humidity"),parse_dates=[0],infer_datetime_format=True)
+        sdata[sensor[l]]['datetime'] = sdata[sensor[l]].datetime.dt.tz_localize('Europe/Berlin')
         # select only every n-th row: skip rows
         sdata[sensor[l]] = sdata[sensor[l]].iloc[::20, :]
         # convert datetime to unix timestamp (FIXME: check timezone)
