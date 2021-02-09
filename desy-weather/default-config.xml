@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<archivereader>
+
+    <datasource>
+
+        <server>
+            <key>1</key>
+            <order>1</order>
+            <name>SDDS-XMLRPC-Server</name>
+            <url>http://kryksdds.desy.de:4056</url>
+            <defaultMethod>AVERAGE</defaultMethod>
+            <decoderClass>de.desy.archive.tool.data.SddsDecoder</decoderClass>
+        </server>
+
+        <server>
+            <key>1</key>
+            <order>2</order>
+            <name>MySQL-XMLRPC-Server</name>
+            <url>http://krykarchive.desy.de:8180</url>
+            <defaultMethod>OPTIMIZED</defaultMethod>
+            <decoderClass>de.desy.archive.tool.data.MySqlDecoder</decoderClass>
+        </server>
+
+    </datasource>
+
+</archivereader>
