@@ -159,13 +159,18 @@ def readdata():
     sel_data = {}
     for l in location:
         mycsv = '{0}/{1}.csv'.format(directory,sensor[l])
+        if l == 'outside':
+            mycsv = '/home/walsh/data/desy-weather/{0}.csv'.format(sensor[l])
         if not path.exists(mycsv):
             continue
-            
+        
         sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","temperature","pressure","humidity"),parse_dates=[0],infer_datetime_format=True)
         sdata[sensor[l]]['datetime'] = sdata[sensor[l]].datetime.dt.tz_localize('Europe/Berlin')
         # select only every n-th row: skip rows
-        sdata[sensor[l]] = sdata[sensor[l]].iloc[::20, :]
+        skip = 20
+        if l == 'outside':
+           skip = 1
+        sdata[sensor[l]] = sdata[sensor[l]].iloc[::skip, :]
         # convert datetime to unix timestamp (FIXME: check timezone)
         sdata[sensor[l]]["timestamp"] = pd.DatetimeIndex ( sdata[sensor[l]]["datetime"] ).astype ( np.int64 )/1000000000
         sdata[sensor[l]]["timestamp"] = sdata[sensor[l]]["timestamp"].astype(int)
@@ -214,17 +219,17 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     # read data from the files
     directory = '/home/walsh/data/infrared-setup'
 
-    max_hours = 1
+    max_hours = 24
     plot = {}
     r = {}
     ds = {}
     color = {}
     sensor = {}
     # FIX ME! Need more colors
-    colors = ['firebrick','navy','green','lightblue','magenta','lightgreen','red','blue','black']
-    sensors = ['raspberry7_bus1_ch1','raspberry7_bus4_ch1','raspberry7_bus6_ch1','raspberry7_bus5_ch1','raspberry8_bus5_ch1','raspberry8_bus6_ch1','raspberry8_bus4_ch1','raspberry8_bus1_ch1','raspberry9_bus1_ch1']
+    colors = ['firebrick','navy','green','lightblue','magenta','lightgreen','red','blue','black','gray']
+    sensors = ['raspberry7_bus1_ch1','raspberry7_bus4_ch1','raspberry7_bus6_ch1','raspberry7_bus5_ch1','raspberry8_bus5_ch1','raspberry8_bus6_ch1','raspberry8_bus4_ch1','raspberry8_bus1_ch1','raspberry9_bus1_ch1','krykWeather']
 #    location = ['sensor #1','sensor #2','sensor #3','sensor #4','sensor #5','sensor #6','sensor #7','sensor #8','ref sensor']
-    location = ['centre-bottom','right-bottom','right-middle','right-top','centre-top','left-top','left-middle','left-bottom','reference']
+    location = ['centre-bottom','right-bottom','right-middle','right-top','centre-top','left-top','left-middle','left-bottom','reference','outside']
     observables = ['dewpoint','temperature','pressure','humidity']
     for i, l in enumerate(location):
         color[l] = colors[i]
