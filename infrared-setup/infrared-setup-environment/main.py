@@ -104,7 +104,6 @@ def get_history():
         for key in observables:
             r[l][key].visible = True
             
-#        if fts-last_ts > 24*3600:
         if last_ts-first_ts < 1:
             sel_data[l] = alldata[l][0:0]
             for key in observables:
@@ -122,19 +121,6 @@ def get_history():
             ds[l][key].data = {'x':sdates, 'y':list(sel_data[l][key])}
             ds[l][key].trigger('data', ds[l][key].data, ds[l][key].data)
     
-#     sdata = {}
-#     sel_data = {}
-#     for l in location:
-#         sdata[sensor[l]] = pd.read_hdf('/home/walsh/data/infrared-setup/raspberryX.h5', sensor[l].replace('-','_'))
-#         last_ts = sdata[sensor[l]].iloc[-1].name
-#         first_ts = sdata[sensor[l]].iloc[0].name
-#         first_ts = last_ts-72*3600
-#         sel_data[l] = sdata[sensor[l]].loc[first_ts:last_ts]
-#         
-#         sdates = [datetime.fromtimestamp(ts) for ts in list(seldata[l].index)]
-#         for key in observables:
-#             ds[l][key].data = {'x':sdates, 'y':list(seldata[l][key])}
-#             ds[l][key].trigger('data', ds[l][key].data, ds[l][key].data)
 
 def initialdata():
     # FIXME: check if alldata is available, otherwise readdata
@@ -144,13 +130,10 @@ def initialdata():
     for l in location:
         last_idx = alldata[l].index.get_loc(now_ts, method='nearest')
         last_ts = alldata[l].iloc[last_idx].name
-#        if now_ts-last_ts > max_hours*3600:
         if last_ts <= midnight_ts:
-#            continue
             sel_data[l] = alldata[l][0:0]
         else:
-            # get the nearest index max_hours before
-#            first_idx = alldata[l].index.get_loc(now_ts-max_hours*3600, method='nearest')
+            # get the nearest index to midnight
             first_idx = alldata[l].index.get_loc(midnight_ts, method='nearest')
             # get the first timestamp
             first_ts = alldata[l].iloc[first_idx].name
@@ -193,24 +176,7 @@ def readdata():
         sdata[sensor[l]] = sdata[sensor[l]].sort_index()
         
         sdata[sensor[l]]["dewpoint"] = dew_point(sdata[sensor[l]]["temperature"],sdata[sensor[l]]["humidity"])
-        
  
-## MOVED TO INITIALDATA        
-#         # index of the last timestamp
-# #        last_ts = sdata[sensor[l]].iloc[-1].name
-#         now_ts = int(time.time())
-#         last_idx = sdata[sensor[l]].index.get_loc(now_ts, method='nearest')
-#         last_ts = sdata[sensor[l]].iloc[last_idx].name
-#         if now_ts-last_ts > max_hours*3600:
-#             continue
-#             
-#         # get the nearest index max_hours before
-#         first_idx = sdata[sensor[l]].index.get_loc(last_ts-max_hours*3600, method='nearest')
-#         # get the first timestamp
-#         first_ts = sdata[sensor[l]].iloc[first_idx].name
-#         # get selected data
-#         sel_data[l] = sdata[sensor[l]].loc[first_ts:last_ts]
-        
         sel_data[l] = sdata[sensor[l]]
         
     return sel_data
@@ -230,7 +196,6 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     # read data from the files
     directory = '/home/walsh/data/infrared-setup'
 
-    max_hours = 24
     plot = {}
     r = {}
     ds = {}
