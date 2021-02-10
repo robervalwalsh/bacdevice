@@ -140,7 +140,7 @@ def initialdata():
             continue
             
         # get the nearest index max_hours before
-        first_idx = alldata[l].index.get_loc(last_ts-max_hours*3600, method='nearest')
+        first_idx = alldata[l].index.get_loc(now_ts-max_hours*3600, method='nearest')
         # get the first timestamp
         first_ts = alldata[l].iloc[first_idx].name
         # get selected data
