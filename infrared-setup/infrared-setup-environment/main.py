@@ -95,16 +95,20 @@ def get_history():
     its = int((idate - datetime(1970, 1, 1)).total_seconds())
     fts = int((fdate - datetime(1970, 1, 1)).total_seconds())
     sel_data = {}
+    ## FIXME: force date range, if nearest too old then "remove" data 
     for l in location:
         last_idx = alldata[l].index.get_loc(fts, method='nearest')
         last_ts = alldata[l].iloc[last_idx].name
         first_idx = alldata[l].index.get_loc(its, method='nearest')
         first_ts = alldata[l].iloc[first_idx].name
+        
         if fts-last_ts > 24*3600:
-            continue 
-        
-        sel_data[l] = alldata[l].loc[first_ts:last_ts]
-        
+            sel_data[l] = alldata[l][0:0]
+            for key in observables:
+                r[l][key].visible = False
+        else:
+            sel_data[l] = alldata[l].loc[first_ts:last_ts]
+            
         if first_ts < its:
             sel_data[l] = sel_data[l][1:]
         if last_ts > fts:
@@ -137,14 +141,15 @@ def initialdata():
         last_idx = alldata[l].index.get_loc(now_ts, method='nearest')
         last_ts = alldata[l].iloc[last_idx].name
         if now_ts-last_ts > max_hours*3600:
-            continue
-            
-        # get the nearest index max_hours before
-        first_idx = alldata[l].index.get_loc(now_ts-max_hours*3600, method='nearest')
-        # get the first timestamp
-        first_ts = alldata[l].iloc[first_idx].name
-        # get selected data
-        sel_data[l] = alldata[l].loc[first_ts:last_ts]
+#            continue
+            sel_data[l] = alldata[l][0:0]
+        else:
+            # get the nearest index max_hours before
+            first_idx = alldata[l].index.get_loc(now_ts-max_hours*3600, method='nearest')
+            # get the first timestamp
+            first_ts = alldata[l].iloc[first_idx].name
+            # get selected data
+            sel_data[l] = alldata[l].loc[first_ts:last_ts]
         
     return sel_data
         
@@ -269,6 +274,8 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
             #r[l][key] = p.line(sdates, list(inidata[l][key]), color=color[l], line_width=2,legend_label=l)
             r[l][key] = p.circle(sdates, list(inidata[l][key]), fill_color=color[l], line_color=color[l], size=3,legend_label=l)
             ds[l][key] = r[l][key].data_source
+            if len(ds[l][key].data['x']) < 1:
+                r[l][key].visible = False
         p.legend.location = "top_left"
         p.legend.orientation = "vertical"
         p.legend.click_policy="hide"
