@@ -30,8 +30,7 @@ from uuid import getnode
 
 import csv
 import sys
-from datetime import datetime
-from datetime import date
+from datetime import datetime,timezone,date
 import time
 from collections import OrderedDict
 from math import pi
@@ -102,7 +101,11 @@ def get_history():
         first_idx = alldata[l].index.get_loc(its, method='nearest')
         first_ts = alldata[l].iloc[first_idx].name
         
-        if fts-last_ts > 24*3600:
+        for key in observables:
+            r[l][key].visible = True
+            
+#        if fts-last_ts > 24*3600:
+        if last_ts-first_ts < 1:
             sel_data[l] = alldata[l][0:0]
             for key in observables:
                 r[l][key].visible = False
@@ -136,16 +139,19 @@ def get_history():
 def initialdata():
     # FIXME: check if alldata is available, otherwise readdata
     sel_data = {}
+    now_ts = int(time.time())
+    midnight_ts = int(time.mktime(datetime(datetime.today().year,datetime.today().month,datetime.today().day,tzinfo=timezone.utc).timetuple()))
     for l in location:
-        now_ts = int(time.time())
         last_idx = alldata[l].index.get_loc(now_ts, method='nearest')
         last_ts = alldata[l].iloc[last_idx].name
-        if now_ts-last_ts > max_hours*3600:
+#        if now_ts-last_ts > max_hours*3600:
+        if last_ts <= midnight_ts:
 #            continue
             sel_data[l] = alldata[l][0:0]
         else:
             # get the nearest index max_hours before
-            first_idx = alldata[l].index.get_loc(now_ts-max_hours*3600, method='nearest')
+#            first_idx = alldata[l].index.get_loc(now_ts-max_hours*3600, method='nearest')
+            first_idx = alldata[l].index.get_loc(midnight_ts, method='nearest')
             # get the first timestamp
             first_ts = alldata[l].iloc[first_idx].name
             # get selected data
