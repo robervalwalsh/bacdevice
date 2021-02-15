@@ -104,7 +104,7 @@ def get_history():
         for key in observables:
             r[l][key].visible = True
             
-        if last_ts-first_ts < 1:
+        if last_ts-first_ts < 1 or l == 'left-top':
             sel_data[l] = alldata[l][0:0]
             for key in observables:
                 r[l][key].visible = False
@@ -130,7 +130,7 @@ def initialdata():
     for l in location:
         last_idx = alldata[l].index.get_loc(now_ts, method='nearest')
         last_ts = alldata[l].iloc[last_idx].name
-        if last_ts <= midnight_ts:
+        if last_ts <= midnight_ts or l == 'left-top':
             sel_data[l] = alldata[l][0:0]
         else:
             # get the nearest index to midnight
@@ -247,6 +247,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
             ds[l][key] = r[l][key].data_source
             if len(ds[l][key].data['x']) < 1:
                 r[l][key].visible = False
+
         p.legend.location = "top_left"
         p.legend.orientation = "vertical"
         p.legend.click_policy="hide"
