@@ -104,7 +104,8 @@ def get_history():
         for key in observables:
             r[l][key].visible = True
             
-        if last_ts-first_ts < 1 or l == 'left-top':
+#        if last_ts-first_ts < 1 or l == 'left-top':
+        if last_ts-first_ts < 1:
             sel_data[l] = alldata[l][0:0]
             for key in observables:
                 r[l][key].visible = False
@@ -130,7 +131,8 @@ def initialdata():
     for l in location:
         last_idx = alldata[l].index.get_loc(now_ts, method='nearest')
         last_ts = alldata[l].iloc[last_idx].name
-        if last_ts <= midnight_ts or l == 'left-top':
+#        if last_ts <= midnight_ts or l == 'left-top':
+        if last_ts <= midnight_ts:
             sel_data[l] = alldata[l][0:0]
         else:
             # get the nearest index to midnight
