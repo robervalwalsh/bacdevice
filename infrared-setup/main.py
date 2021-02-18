@@ -78,7 +78,13 @@ def readout(meters):
             measurements[section] = [None]*4
         fname = meter.name
         outputvar = meter.getPresentValue ( )
-        measurements[section][0] = datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S.%f') .replace ( microsecond = 0 )
+        try:
+            measurements[section][0] = datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S.%f').replace ( microsecond = 0 )
+        except ValueError as ve1:
+            try:
+                measurements[section][0] = datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S').replace ( microsecond = 0 )
+            except ValueError as ve2:
+                continue
         if 'temp' in fname:
             measurements[section][1] = outputvar
         elif 'pres' in fname:
