@@ -45,20 +45,6 @@ import time
 from collections import OrderedDict
 from math import pi
 
-from bokeh.plotting import figure, curdoc
-from bokeh.driving import linear
-from bokeh.models import DatetimeTickFormatter
-from bokeh.models.widgets import Div,PreText
-from bokeh.layouts import column,row
-from bokeh.application.handlers.directory import DirectoryHandler
-
-from bokeh.layouts import gridplot
-from bokeh.models import CheckboxGroup
-from bokeh.models import Slider
-from bokeh.models import TextInput
-from bokeh.models import DatePicker
-
-from bokeh.models import Button
 
 import random
 
@@ -67,8 +53,6 @@ import pandas as pd
 
 import thermorasp
 METERS = { "thermorasps": thermorasp }
-
-global periodic_callback_id
 
 def readout(meters):
     measurements = {}
@@ -99,41 +83,51 @@ def readout(meters):
     return measurements
 
 def store():
-    time.sleep(10)
+    global prev_timestamp
+    global store_path
+    global update_interval
+    global meter_name
+    global time_interval
+    global sleep_time
+#    time.sleep(10)
     measurements = readout(mymeters)
+    if measurements == {}:
+        return
     for key,values in measurements.items():
-        rasp = key.split('-')[0]
-        sensor = key.replace('-','_')
-        timestamp = [int(time.mktime(values[0].timetuple()))]
-#        measurement = {'temperature':[values[1]],'pressure':[values[2]],'humidity':[values[3]]}
-#        df = pd.DataFrame(data=measurement,index=timestamp)
-        measurement = {'time':[values[0]],'temperature':[values[1]],'pressure':[values[2]],'humidity':[values[3]]}
+        # trying to deal with phase difference between data readout and storage intervals
+        if time_interval[key] < update_interval[key]:
+            time_interval[key] += sleep_time
+            continue
+        time_interval[key] = sleep_time
+       
+#        rasp = key.split('-')[0]
+#        sensor = key.replace('-','_')
+        try:
+            timestamp = [int(time.mktime(values[0].timetuple()))]
+        except  AttributeError as att_err:
+            continue
+        if timestamp == prev_timestamp[key]:
+            continue
+        else:
+            prev_timestamp[key] = timestamp
+            
+#        measurement = {'time':[values[0]],'temperature':[values[1]],'pressure':[values[2]],'humidity':[values[3]]}
+        measurement = {}
+
+        measurement['timestamp_utc'] = [values[0]]
+        if values[1]:
+            measurement['temperature'] = [values[1]]
+        if values[2] or values[3]:
+            measurement['pressure'] = [values[2]]
+            measurement['humidity'] = [values[3]]
+        
         df = pd.DataFrame(data=measurement)
         
-#        print(df)
-#        df.to_hdf('{}.h5'.format(rasp), key=sensor, format='table', append=True, complevel=5)
-#        df.to_hdf('/home/walsh/data/infrared-setup/{}.h5'.format(rasp), key=sensor, format='table', append=True)
-        df.to_csv('/home/walsh/data/infrared-setup/{}.csv'.format(sensor), mode='a', header=False, index=False)
-
-
-@linear()
-def update(step):
-    measurements = readout(mymeters)
-    # datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-    
-    for l in location:
-        sdate = measurements[sensor[l]][0]
-        for idx,key in enumerate(observables):
-            meas = measurements[sensor[l]][idx+1]
-            ds[l][key].data['x'].append(sdate)
-            ds[l][key].data['y'].append(meas)
-            ds[l][key].trigger('data', ds[l][key].data, ds[l][key].data)
+        output_csv = '{}/{}.csv'.format(store_path,meter_name[key])
+        header = ( not os.path.exists(output_csv) )
         
-            deltaT = (ds[l][key].data['x'][-1] - ds[l][key].data['x'][0]).seconds
-            if deltaT > max_hours*3600:
-                del ds[l][key].data['x'][0]
-                del ds[l][key].data['y'][0]
-    
+        df.to_csv(output_csv, mode='a', header=header, index=False)
+
 
 class DataThread ( threading.Thread ) :
     def __init__ ( self, meters ) :
@@ -174,100 +168,24 @@ class DataThread ( threading.Thread ) :
         self.flag_stop = True
 
 
-def live_toggle(attr,old,new):
-    global periodic_callback_id
-#    datepicker_status()
-    if len(new) == 1:
-        reload_data()
-        periodic_callback_id = curdoc().add_periodic_callback(update, 10000)
-    else:
-        curdoc().remove_periodic_callback(periodic_callback_id)
-    
-def datepicker_status(attr,old,new):
-    date_picker_i.value = new
-    live_checkbox.active = []
-    print(date_picker_i.value,date_picker_f.value, live_checkbox.active)
-
-def initial_date(attr,old,new):
-    date_picker_i.value = new
-
-def final_date(attr,old,new):
-    date_picker_f.value = new
-
-def get_history():
-
-### FIX ME
-#    global periodic_callback_id
-    live_checkbox.active = []
-#    curdoc().remove_periodic_callback(periodic_callback_id)
-#    print(periodic_callback_id)
-    sdata = {}
-    sel_data = {}
-    for l in location:
-        sdata[sensor[l]] = pd.read_hdf('/home/walsh/data/infrared-setup/raspberryX.h5', sensor[l].replace('-','_'))
-        last_ts = sdata[sensor[l]].iloc[-1].name
-        first_ts = sdata[sensor[l]].iloc[0].name
-        first_ts = last_ts-72*3600
-        sel_data[l] = sdata[sensor[l]].loc[first_ts:last_ts]
-        
-        sdates = [datetime.fromtimestamp(ts) for ts in list(seldata[l].index)]
-        for key in observables:
-            ds[l][key].data = {'x':sdates, 'y':list(seldata[l][key])}
-            ds[l][key].trigger('data', ds[l][key].data, ds[l][key].data)
-
-def live_hours(attr,old,new):
-    global max_hours
-    try:
-        max_hours = float(new)
-    except:
-        max_hours = float(old)
-    if max_hours > 24:
-        max_hours = 24
-    if max_hours < 0.1:
-        max_hours = 0.1
-    live_hours_input.update(value=str(max_hours))
-    reload_data()
-        
-def reload_data():
-    seldata = readdata()
-    for l in location:
-        sdates = [datetime.fromtimestamp(ts) for ts in list(seldata[l].index)]
-        for key in observables:
-            ds[l][key].data = {'x':sdates, 'y':list(seldata[l][key])}
-            ds[l][key].trigger('data', ds[l][key].data, ds[l][key].data)
-    
-
-def readdata():
-    sdata = {}
-    sel_data = {}
-    for l in location:
-        sdata[sensor[l]] = pd.read_hdf('/home/walsh/data/infrared-setup/raspberryX.h5', sensor[l].replace('-','_'))
-        # remove possible duplicates (not sure why there are duplicates)
-        sdata[sensor[l]] = sdata[sensor[l]].loc[~sdata[sensor[l]].index.duplicated(keep='first')]
-        # reindex
-        sdata[sensor[l]] = sdata[sensor[l]].sort_index()
-        last_ts = sdata[sensor[l]].iloc[-1].name
-        # get the nearest index
-        first_idx = sdata[sensor[l]].index.get_loc(last_ts-max_hours*3600, method='nearest')
-        # get the initial timestamp
-        first_ts = sdata[sensor[l]].iloc[first_idx].name
-        sel_data[l] = sdata[sensor[l]].loc[first_ts:last_ts]
-
-#        sdates = [datetime.fromtimestamp(ts) for ts in list(sel_data.index)]
-#        stemps = list(sel_data.temperature)
-#        spress = list(sel_data.pressure)
-#        shumts = list(sel_data.humidity)
-    return sel_data
-
-#def datei_changed(attr,old,new):
-
 
 def main ( ) :
     global mymeters
-
+    
+    global update_interval
+    global prev_timestamp
+    global store_path
+    global meter_name
+    global time_interval
+    global sleep_time
+    
+    meter_name = {}
+    prev_timestamp = {}
+    time_interval = {}
+    sleep_time = 10
+    update_interval = {}
+    
     server_config = 'server.cfg'
-    if __name__.startswith('bk_script'):
-        server_config = 'cabinet-monitor/server.cfg'
     if not path.exists ( server_config ) :
         logger.error ( "Error: File server.cfg not found." )
         exit ( 1 )
@@ -289,6 +207,10 @@ def main ( ) :
     ai_objs = []
     idx = 1
 
+    store_path = './'
+    if 'path' in cparser['storage']:
+         store_path = cparser['storage']['path']
+
     logger.info ( "Initializing meters..." )
     for key, metermodule in sorted(METERS.items(),reverse=True) :
         if not key in cparser["server"] :
@@ -308,11 +230,31 @@ def main ( ) :
             ms = metermodule.getMeters ( info )
             logger.info ( "Got {} meter(s) from {}" .format ( len ( ms ), metersection ) )
             meters_active.extend ( ms )
-
+            
+            if "name" in info :
+                if info["name"] in meter_name.values():
+                    print('Please check your configuration file: different sensors with same name in config file')
+                    os.sys.exit(-1)
+                meter_name[metersection] = info["name"]
+            else:
+                meter_name[metersection] = metersection
+            prev_timestamp[metersection] = [0]
+            
+            update_interval[metersection] = 60
+            if "updateInterval" in info:
+                update_interval[metersection] = int(info["updateInterval"])
+                
+            if update_interval[metersection] < 10:
+                update_interval[metersection] = 10
+            update_interval[metersection] = round(update_interval[metersection]/10)*10
+            
+            # initially just grab the first data available
+            time_interval[metersection] = update_interval[metersection]
+            
             for m in ms :
                 m.name = "{}_{}" .format ( metersection, m.name )
                 m.section = metersection
-                    
+                
                 idx += 1
 
                 fname = m.name
@@ -339,98 +281,10 @@ def main ( ) :
 
 if __name__ == "__main__" :
     main ( )
+    # allow some time to have data from network(???)
+    time.sleep(1)
+    
     while True:
         store()
+        time.sleep(sleep_time)
     
-elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
-    max_hours = 1
-
-    # name starts with bk_script (__name__ = bk_script_<some number>)
-    div = Div(text="<img src='cabinet-monitor/static/daf_25c_cabinet_sensors_test.jpg' width='300'>")
-    plot = {}
-    r = {}
-    ds = {}
-    color = {}
-    sensor = {}
-    colors = ['firebrick','navy','green']
-    sensors = ['raspberry3-bus1-ch1','raspberry3-bus4-ch1','raspberry3-bus4-ch0']
-    location = ['top','middle','bottom']
-    observables = ['temperature','pressure','humidity']
-    for i, l in enumerate(location):
-        color[l] = colors[i]
-        sensor[l] = sensors[i]
-        r[l]  = {}
-        ds[l] = {}
-    plot[observables[0]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",toolbar_location="above")
-    plot[observables[1]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
-    plot[observables[2]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
-    date_format = ['%d %b %Y %H:%M:%S']
-    for key, p in plot.items():
-        p.xaxis.formatter=DatetimeTickFormatter(
-               microseconds=date_format,
-               milliseconds=date_format,
-               seconds=date_format,
-               minsec=date_format,
-               minutes=date_format,
-               hourmin=date_format,
-               hours=date_format,
-               days=date_format,
-               months=date_format,
-               years=date_format
-              )
-        p.xaxis.major_label_orientation = pi/3
-        p.xaxis.axis_label = "Local time"
-
-        seldata = readdata()
-        for l in location:
-            sdates = [datetime.fromtimestamp(ts) for ts in list(seldata[l].index)]
-#            r[l][key] = p.line([], [], color=color[l], line_width=2,legend_label=l)
-#            r[l][key] = p.line(sdates, list(seldata[l][key]), color=color[l], line_width=2,legend_label=l)
-            r[l][key] = p.circle(sdates, list(seldata[l][key]), fill_color=color[l], line_color=color[l], size=4,legend_label=l)
-            ds[l][key] = r[l][key].data_source
-        p.legend.location = "top_left"
-
-        
-    plot['temperature'].yaxis.axis_label = "Temperature (C)"
-    plot['pressure'].yaxis.axis_label = "Pressure (hPa)"
-    plot['humidity'].yaxis.axis_label = "Relative Humidity (%RH)"
-    
-
-    live_checkbox = CheckboxGroup(labels=['Live'], active=[0], width=150)
-    live_checkbox.on_change('active',live_toggle)
-    
-    live_hours_input = TextInput(value=str(max_hours), title="Live past hours (max. 24h):", width=150)
-    live_hours_input.on_change('value',live_hours)
-    
-#    live_slider = Slider(start=0.01, end=24, value=max_hours, step=0.01, title="Hours before")
-#    live_slider.on_change('value',live_hours)
-    
-    # pick a date
-    date_picker_i = DatePicker(value=date.today(),max_date=date.today(), title='Choose inital date:', width=150, disabled=False)
-    mydate_i=date_picker_i.value
-    date_picker_f = DatePicker(value=date.today(),max_date=date.today(), title='Choose final date:' , width=150, disabled=False)
-    mydate_f=date_picker_f.value
-    date_picker_i.on_change('value',initial_date)
-    date_picker_f.on_change('value',final_date)
-    
-    hist_button = Button(label="Show History", button_type="default", width=310)
-    hist_button.on_click(get_history)
-    
-    pre_head = PreText(text="N.B.: Readout every 10 seconds. Be patient!",width=500, height=50)
-    pre_head2 = PreText(text="",width=400, height=25)
-    pre_temp_top = PreText(text="",width=400, height=20)
-    pre_temp_mid = PreText(text="",width=400, height=20)
-    pre_temp_bot = PreText(text="",width=400, height=20)
-    
-    h_space = PreText(text="",width=50, height=1)
-    v_space = PreText(text="",width=1, height=50)
-    
-#    curdoc().add_root(column(pre_head,row(div,column(pre_head2,pre_temp_top,pre_temp_mid,pre_temp_bot),column(plot['temperature'],plot['humidity'],plot['pressure']),)))
-    curdoc().add_root(column(row(h_space,pre_head),row(h_space,live_hours_input, h_space, h_space, date_picker_i, date_picker_f), row(h_space,live_checkbox,h_space, h_space, hist_button),v_space,row(h_space,plot['temperature'],h_space,plot['humidity'],h_space,plot['pressure']), v_space,row(h_space,div)))
-    
-    readdata()
-    main()
-#    time.sleep ( 10 )
-    periodic_callback_id = curdoc().add_periodic_callback(update, 10000)
-else:
-    pass    
