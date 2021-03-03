@@ -361,7 +361,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     plot_test['temperature'].legend.location = "top_left"
     plot_test['temperature'].legend.orientation = "vertical"
     plot_test['temperature'].legend.click_policy="hide"
-    plot_test['temperature'].yaxis.axis_label = "Temperature (C)"
+    plot_test['temperature'].yaxis.axis_label = "Dry Air Temperature (C)"
     
               
     
@@ -391,7 +391,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     v_space = PreText(text="",width=1, height=50)
     
     
-    curdoc().add_root(column(row(h_space,pre_head),row(h_space, date_picker_i, date_picker_f), row(h_space, hist_button),v_space,row(h_space,plot['dewpoint'],h_space,plot['temperature']), v_space,row(h_space,plot['humidity'],h_space,plot['pressure']), v_space,row(h_space,plot_test['temperature'],h_space), v_space))
+    curdoc().add_root(column(row(h_space,pre_head),row(h_space, date_picker_i, date_picker_f), row(h_space, hist_button),v_space,row(h_space,plot['dewpoint'],h_space,plot_test['temperature']), v_space,row(h_space,plot['temperature'],h_space,plot['humidity']), v_space,row(h_space,plot['pressure'],h_space), v_space))
     
 #    readdata()
 #    main()
