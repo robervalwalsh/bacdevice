@@ -96,7 +96,7 @@ def get_history():
     sel_data = {}
     ## FIXME: force date range, if nearest too old then "remove" data 
     for l in location:
-        if 'test' in l:
+        if 'pt100' in l:
             continue
         last_idx = alldata[l].index.get_loc(fts, method='nearest')
         last_ts = alldata[l].iloc[last_idx].name
@@ -125,21 +125,21 @@ def get_history():
             ds[l][key].trigger('data', ds[l][key].data, ds[l][key].data)
             
             
-    ## test
+    ## pt100
     for l in location:
-        if not 'test' in l:
+        if not 'pt100' in l:
             continue
         last_idx = alldata[l].index.get_loc(fts, method='nearest')
         last_ts = alldata[l].iloc[last_idx].name
         first_idx = alldata[l].index.get_loc(its, method='nearest')
         first_ts = alldata[l].iloc[first_idx].name
         
-        r_test[l]['temperature'].visible = True
+        r_pt100[l]['temperature'].visible = True
             
 #        if last_ts-first_ts < 1 or l == 'left-top':
         if last_ts-first_ts < 1:
             sel_data[l] = alldata[l][0:0]
-            r_test[l]['temperature'].visible = False
+            r_pt100[l]['temperature'].visible = False
         else:
             sel_data[l] = alldata[l].loc[first_ts:last_ts]
             
@@ -149,8 +149,8 @@ def get_history():
             sel_data[l] = sel_data[l][:-1]
         
         sdates = [datetime.fromtimestamp(ts) for ts in list(sel_data[l].index)]
-        ds_test[l]['temperature'].data = {'x':sdates, 'y':list(sel_data[l]['temperature'])}
-        ds_test[l]['temperature'].trigger('data', ds_test[l]['temperature'].data, ds_test[l]['temperature'].data)
+        ds_pt100[l]['temperature'].data = {'x':sdates, 'y':list(sel_data[l]['temperature'])}
+        ds_pt100[l]['temperature'].trigger('data', ds_pt100[l]['temperature'].data, ds_pt100[l]['temperature'].data)
             
     
     
@@ -188,8 +188,6 @@ def readdata():
         mycsv = '{0}/{1}.csv'.format(directory,sensor[l])
         if l == 'outside':
             mycsv = '/home/walsh/data/desy-weather/{0}.csv'.format(sensor[l])
-        if 'test' in l:
-            mycsv = '/home/walsh/data/test/{0}.csv'.format(sensor[l])
         if not path.exists(mycsv):
             continue
         
@@ -252,20 +250,22 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
 #    location = ['sensor #1','sensor #2','sensor #3','sensor #4','sensor #5','sensor #6','sensor #7','sensor #8','ref sensor']
     location = ['centre-bottom','right-bottom','right-middle','right-top','centre-top','left-top','left-middle','left-bottom','reference','outside']
     
-    location.append('test')
-    location.append('test0')
-    location.append('test1')
-    colors.append('black')
+    location.append('pt100_1')
+    location.append('pt100_2')
+    location.append('pt100_3')
+    location.append('pt100_4')
+    colors.append('magenta')
     colors.append('red')
     colors.append('blue')
+    colors.append('green')
 #    location = ['centre-bottom','right-bottom','right-middle','right-top','centre-top','left-top','left-middle','left-bottom','reference']
     sensors = []
     for l in location:
         if l == 'outside':
             sensors.append('krykWeather')
             continue
-        if l == 'test0' or l == 'test1':
-            sensors.append('irsetup_pt100_'+l)
+        if 'pt100' in l:
+            sensors.append('irsetup_'+l)
             continue
         sensors.append('irsetup_bme680_'+l)
         
@@ -302,7 +302,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
         p.xaxis.axis_label = "Local time"
         
         for l in location:
-            if 'test' in l:
+            if 'pt100' in l:
                 continue
             try:
                 sdates = [datetime.fromtimestamp(ts) for ts in list(inidata[l].index)]
@@ -323,11 +323,11 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     plot['pressure'].yaxis.axis_label = "Pressure (hPa)"
     plot['humidity'].yaxis.axis_label = "Relative Humidity (%RH)"
     
-    ## test plot
+    ## pt100 plot
 
-    plot_test = {}
-    plot_test['temperature'] =   figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot['dewpoint'].x_range,toolbar_location="above")
-    plot_test['temperature'].xaxis.formatter=DatetimeTickFormatter(
+    plot_pt100 = {}
+    plot_pt100['temperature'] =   figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot['dewpoint'].x_range,toolbar_location="above")
+    plot_pt100['temperature'].xaxis.formatter=DatetimeTickFormatter(
                microseconds=date_format,
                milliseconds=date_format,
                seconds=date_format,
@@ -339,29 +339,29 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
                months=date_format,
                years=date_format
               )
-    plot_test['temperature'].xaxis.major_label_orientation = pi/3
-    plot_test['temperature'].xaxis.axis_label = "Local time"
-    r_test = {}
-    ds_test = {}
+    plot_pt100['temperature'].xaxis.major_label_orientation = pi/3
+    plot_pt100['temperature'].xaxis.axis_label = "Local time"
+    r_pt100 = {}
+    ds_pt100 = {}
     for l in location:
-        if not 'test' in l:
+        if not 'pt100' in l:
             continue
-        r_test[l] = {}
-        ds_test[l] = {}
+        r_pt100[l] = {}
+        ds_pt100[l] = {}
         try:
             sdates = [datetime.fromtimestamp(ts) for ts in list(inidata[l].index)]
         except KeyError as e:
             continue
             
-        r_test[l]['temperature'] = plot_test['temperature'].circle(sdates, list(inidata[l]['temperature']), fill_color=color[l], line_color=color[l], size=3,legend_label=l)
-        ds_test[l]['temperature'] = r_test[l]['temperature'].data_source
-        if len(ds_test[l]['temperature'].data['x']) < 1:
-            r_test[l]['temperature'].visible = False
+        r_pt100[l]['temperature'] = plot_pt100['temperature'].circle(sdates, list(inidata[l]['temperature']), fill_color=color[l], line_color=color[l], size=3,legend_label=l)
+        ds_pt100[l]['temperature'] = r_pt100[l]['temperature'].data_source
+        if len(ds_pt100[l]['temperature'].data['x']) < 1:
+            r_pt100[l]['temperature'].visible = False
             
-    plot_test['temperature'].legend.location = "top_left"
-    plot_test['temperature'].legend.orientation = "vertical"
-    plot_test['temperature'].legend.click_policy="hide"
-    plot_test['temperature'].yaxis.axis_label = "Dry Air Temperature (C)"
+    plot_pt100['temperature'].legend.location = "top_left"
+    plot_pt100['temperature'].legend.orientation = "vertical"
+    plot_pt100['temperature'].legend.click_policy="hide"
+    plot_pt100['temperature'].yaxis.axis_label = "Dry Air Temperature (C)"
     
               
     
@@ -391,7 +391,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     v_space = PreText(text="",width=1, height=50)
     
     
-    curdoc().add_root(column(row(h_space,pre_head),row(h_space, date_picker_i, date_picker_f), row(h_space, hist_button),v_space,row(h_space,plot['dewpoint'],h_space,plot_test['temperature']), v_space,row(h_space,plot['temperature'],h_space,plot['humidity']), v_space,row(h_space,plot['pressure'],h_space), v_space))
+    curdoc().add_root(column(row(h_space,pre_head),row(h_space, date_picker_i, date_picker_f), row(h_space, hist_button),v_space,row(h_space,plot['dewpoint'],h_space,plot_pt100['temperature']), v_space,row(h_space,plot['temperature'],h_space,plot['humidity']), v_space,row(h_space,plot['pressure'],h_space), v_space))
     
 #    readdata()
 #    main()
