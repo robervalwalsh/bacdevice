@@ -343,9 +343,18 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     plot_pt100['temperature'].xaxis.axis_label = "Local time"
     r_pt100 = {}
     ds_pt100 = {}
+    leg_pt100 = {}
     for l in location:
         if not 'pt100' in l:
             continue
+        if '_1' in l:
+            leg_pt100[l] = l+': upper IN'
+        if '_2' in l:
+            leg_pt100[l] = l+': upper OUT'
+        if '_3' in l:
+            leg_pt100[l] = l+': lower OUT'
+        if '_4' in l:
+            leg_pt100[l] = l+': lower IN'
         r_pt100[l] = {}
         ds_pt100[l] = {}
         try:
@@ -353,7 +362,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
         except KeyError as e:
             continue
             
-        r_pt100[l]['temperature'] = plot_pt100['temperature'].circle(sdates, list(inidata[l]['temperature']), fill_color=color[l], line_color=color[l], size=3,legend_label=l)
+        r_pt100[l]['temperature'] = plot_pt100['temperature'].circle(sdates, list(inidata[l]['temperature']), fill_color=color[l], line_color=color[l], size=3,legend_label=leg_pt100[l])
         ds_pt100[l]['temperature'] = r_pt100[l]['temperature'].data_source
         if len(ds_pt100[l]['temperature'].data['x']) < 1:
             r_pt100[l]['temperature'].visible = False
