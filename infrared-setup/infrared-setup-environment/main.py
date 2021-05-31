@@ -254,7 +254,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     location.append('ds18b20_centre-bottom')
 #    location.append('pt100_3')
 #    location.append('pt100_4')
-    colors.append('magenta')
+    colors.append('blue')
     colors.append('red')
 #    colors.append('blue')
 #    colors.append('green')
