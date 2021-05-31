@@ -134,12 +134,12 @@ def get_history():
         first_idx = alldata[l].index.get_loc(its, method='nearest')
         first_ts = alldata[l].iloc[first_idx].name
         
-        r_pt100[l]['temperature'].visible = True
+        r_temp[l]['temperature'].visible = True
             
 #        if last_ts-first_ts < 1 or l == 'left-top':
         if last_ts-first_ts < 1:
             sel_data[l] = alldata[l][0:0]
-            r_pt100[l]['temperature'].visible = False
+            r_temp[l]['temperature'].visible = False
         else:
             sel_data[l] = alldata[l].loc[first_ts:last_ts]
             
@@ -149,8 +149,8 @@ def get_history():
             sel_data[l] = sel_data[l][:-1]
         
         sdates = [datetime.fromtimestamp(ts) for ts in list(sel_data[l].index)]
-        ds_pt100[l]['temperature'].data = {'x':sdates, 'y':list(sel_data[l]['temperature'])}
-        ds_pt100[l]['temperature'].trigger('data', ds_pt100[l]['temperature'].data, ds_pt100[l]['temperature'].data)
+        ds_temp[l]['temperature'].data = {'x':sdates, 'y':list(sel_data[l]['temperature'])}
+        ds_temp[l]['temperature'].trigger('data', ds_temp[l]['temperature'].data, ds_temp[l]['temperature'].data)
             
     
     
@@ -325,9 +325,9 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     
     ## pt100 plot
 
-    plot_pt100 = {}
-    plot_pt100['temperature'] =   figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot['dewpoint'].x_range,toolbar_location="above")
-    plot_pt100['temperature'].xaxis.formatter=DatetimeTickFormatter(
+    plot_temp = {}
+    plot_temp['temperature'] =   figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot['dewpoint'].x_range,toolbar_location="above")
+    plot_temp['temperature'].xaxis.formatter=DatetimeTickFormatter(
                microseconds=date_format,
                milliseconds=date_format,
                seconds=date_format,
@@ -339,31 +339,31 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
                months=date_format,
                years=date_format
               )
-    plot_pt100['temperature'].xaxis.major_label_orientation = pi/3
-    plot_pt100['temperature'].xaxis.axis_label = "Local time"
-    r_pt100 = {}
-    ds_pt100 = {}
-    leg_pt100 = {}
+    plot_temp['temperature'].xaxis.major_label_orientation = pi/3
+    plot_temp['temperature'].xaxis.axis_label = "Local time"
+    r_temp = {}
+    ds_temp = {}
+    leg_temp = {}
     for l in location:
         if not 'pt100' in l and not 'ds18b20' in l:
             continue
-        leg_pt100[l] = l
-        r_pt100[l] = {}
-        ds_pt100[l] = {}
+        leg_temp[l] = l
+        r_temp[l] = {}
+        ds_temp[l] = {}
         try:
             sdates = [datetime.fromtimestamp(ts) for ts in list(inidata[l].index)]
         except KeyError as e:
             continue
             
-        r_pt100[l]['temperature'] = plot_pt100['temperature'].circle(sdates, list(inidata[l]['temperature']), fill_color=color[l], line_color=color[l], size=3,legend_label=leg_pt100[l])
-        ds_pt100[l]['temperature'] = r_pt100[l]['temperature'].data_source
-        if len(ds_pt100[l]['temperature'].data['x']) < 1:
-            r_pt100[l]['temperature'].visible = False
+        r_temp[l]['temperature'] = plot_temp['temperature'].circle(sdates, list(inidata[l]['temperature']), fill_color=color[l], line_color=color[l], size=3,legend_label=leg_temp[l])
+        ds_temp[l]['temperature'] = r_temp[l]['temperature'].data_source
+        if len(ds_temp[l]['temperature'].data['x']) < 1:
+            r_temp[l]['temperature'].visible = False
             
-    plot_pt100['temperature'].legend.location = "top_left"
-    plot_pt100['temperature'].legend.orientation = "vertical"
-    plot_pt100['temperature'].legend.click_policy="hide"
-    plot_pt100['temperature'].yaxis.axis_label = "Temperature (C)"
+    plot_temp['temperature'].legend.location = "top_left"
+    plot_temp['temperature'].legend.orientation = "vertical"
+    plot_temp['temperature'].legend.click_policy="hide"
+    plot_temp['temperature'].yaxis.axis_label = "Temperature (C)"
     
               
     
@@ -393,7 +393,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     v_space = PreText(text="",width=1, height=50)
     
     
-    curdoc().add_root(column(row(h_space,pre_head),row(h_space, date_picker_i, date_picker_f), row(h_space, hist_button),v_space,row(h_space,plot['dewpoint'],h_space,plot_pt100['temperature']), v_space,row(h_space,plot['temperature'],h_space,plot['humidity']), v_space,row(h_space,plot['pressure'],h_space), v_space))
+    curdoc().add_root(column(row(h_space,pre_head),row(h_space, date_picker_i, date_picker_f), row(h_space, hist_button),v_space,row(h_space,plot['dewpoint'],h_space,plot_temp['temperature']), v_space,row(h_space,plot['temperature'],h_space,plot['humidity']), v_space,row(h_space,plot['pressure'],h_space), v_space))
     
 #    readdata()
 #    main()
