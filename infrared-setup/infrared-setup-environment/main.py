@@ -96,7 +96,7 @@ def get_history():
     sel_data = {}
     ## FIXME: force date range, if nearest too old then "remove" data 
     for l in location:
-        if 'pt100' in l:
+        if 'pt100' in l or 'ds18b20' in l:
             continue
         last_idx = alldata[l].index.get_loc(fts, method='nearest')
         last_ts = alldata[l].iloc[last_idx].name
@@ -125,9 +125,9 @@ def get_history():
             ds[l][key].trigger('data', ds[l][key].data, ds[l][key].data)
             
             
-    ## pt100
+    ## pt100 or single temp measurement 
     for l in location:
-        if not 'pt100' in l:
+        if not 'pt100' in l and not 'ds18b20' in l:
             continue
         last_idx = alldata[l].index.get_loc(fts, method='nearest')
         last_ts = alldata[l].iloc[last_idx].name
@@ -192,7 +192,7 @@ def readdata():
             continue
         
         
-        if not 'pt100' in sensor[l]:
+        if not 'pt100' in sensor[l] and not 'ds18b20' in sensor[l]:
             sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","temperature","pressure","humidity"),parse_dates=[0],infer_datetime_format=True,comment='#',header=0)
         else:
             sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","temperature"),parse_dates=[0],infer_datetime_format=True,comment='#',header=0)
@@ -216,7 +216,7 @@ def readdata():
         # reindex
         sdata[sensor[l]] = sdata[sensor[l]].sort_index()
         
-        if not 'pt100' in sensor[l]:
+        if not 'pt100' in sensor[l] and not 'ds18b20' in sensor[l]:
             sdata[sensor[l]]["dewpoint"] = dew_point(sdata[sensor[l]]["temperature"],sdata[sensor[l]]["humidity"])
  
         sel_data[l] = sdata[sensor[l]]
@@ -250,21 +250,21 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
 #    location = ['sensor #1','sensor #2','sensor #3','sensor #4','sensor #5','sensor #6','sensor #7','sensor #8','ref sensor']
     location = ['centre-bottom','right-bottom','right-middle','right-top','centre-top','left-top','left-middle','left-bottom','reference','outside']
     
-    location.append('pt100_1')
-    location.append('pt100_2')
-    location.append('pt100_3')
-    location.append('pt100_4')
+    location.append('ds18b20_left-middle')
+    location.append('ds18b20_centre-bottom')
+#    location.append('pt100_3')
+#    location.append('pt100_4')
     colors.append('magenta')
     colors.append('red')
-    colors.append('blue')
-    colors.append('green')
+#    colors.append('blue')
+#    colors.append('green')
 #    location = ['centre-bottom','right-bottom','right-middle','right-top','centre-top','left-top','left-middle','left-bottom','reference']
     sensors = []
     for l in location:
         if l == 'outside':
             sensors.append('krykWeather')
             continue
-        if 'pt100' in l:
+        if 'pt100' in l or 'ds18b20' in l:
             sensors.append('irsetup_'+l)
             continue
         sensors.append('irsetup_bme680_'+l)
@@ -302,7 +302,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
         p.xaxis.axis_label = "Local time"
         
         for l in location:
-            if 'pt100' in l:
+            if 'pt100' in l or 'ds18b20' in l:
                 continue
             try:
                 sdates = [datetime.fromtimestamp(ts) for ts in list(inidata[l].index)]
@@ -345,16 +345,9 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     ds_pt100 = {}
     leg_pt100 = {}
     for l in location:
-        if not 'pt100' in l:
+        if not 'pt100' in l and not 'ds18b20' in l:
             continue
-        if '_1' in l:
-            leg_pt100[l] = l+': upper IN'
-        if '_2' in l:
-            leg_pt100[l] = l+': upper OUT'
-        if '_3' in l:
-            leg_pt100[l] = l+': lower OUT'
-        if '_4' in l:
-            leg_pt100[l] = l+': lower IN'
+        leg_pt100[l] = l
         r_pt100[l] = {}
         ds_pt100[l] = {}
         try:
@@ -370,7 +363,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     plot_pt100['temperature'].legend.location = "top_left"
     plot_pt100['temperature'].legend.orientation = "vertical"
     plot_pt100['temperature'].legend.click_policy="hide"
-    plot_pt100['temperature'].yaxis.axis_label = "Dry Air Temperature (C)"
+    plot_pt100['temperature'].yaxis.axis_label = "Temperature (C)"
     
               
     
