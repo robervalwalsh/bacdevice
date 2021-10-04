@@ -24,7 +24,7 @@ def combinedWeather(start,end,n):
   for pv in points:
     cmd = f'cd /home/{username}/daf-monitoring/bacdevice/desy-weather; /usr/bin/java -jar ArchiveReader.jar -pv krykWeather:{pv}_ai -start {start} -end {end} -method AVERAGE -count {n} -output txt -path /tmp/{username} ; cd -'
     os.system(cmd)
-    name = '/tmp/{username}/krykWeather_'+pv+'_ai.txt'
+    name = f'/tmp/{username}/krykWeather_'+pv+'_ai.txt'
     # remove first and last lines
     os.system(f"sed -i '1d' {name}")
     os.system(f"sed -i '$d' {name}")
