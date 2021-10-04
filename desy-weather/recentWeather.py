@@ -40,7 +40,7 @@ def combinedWeather(start,end,n):
   
 ##########
 
-df = pd.read_csv('f/home/{username}/daf-monitoring/data/desy-weather/krykWeather.csv',names=("datetime","temperature","pressure","humidity"),parse_dates=[0],infer_datetime_format=True)
+df = pd.read_csv(f'/home/{username}/daf-monitoring/data/desy-weather/krykWeather.csv',names=("datetime","temperature","pressure","humidity"),parse_dates=[0],infer_datetime_format=True)
 
 dt1 = df.iloc[-1]['datetime']
 dt2 = datetime.today()
