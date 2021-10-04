@@ -185,9 +185,15 @@ def main ( ) :
     sleep_time = 10
     update_interval = {}
     
-    server_config = 'server.cfg'
+#    server_config = 'server.cfg'
+    if len(sys.argv) > 1:
+        server_config = sys.argv[1]
+    else:
+        print("Error: Please provide the name of configuration file")
+        exit(1)
     if not path.exists ( server_config ) :
-        logger.error ( "Error: File server.cfg not found." )
+        print("Error: File " + server_config + " not found.")
+        logger.error ( "Error: File " + server_config + " not found." )
         exit ( 1 )
 
     cparser = configparser.ConfigParser ( )
