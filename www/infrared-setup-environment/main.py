@@ -245,7 +245,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     # name starts with bk_script (__name__ = bk_script_<some number>)
     
     # read data from the files
-    directory = '/tmp/cleangat/data/'
+    directory = '/home/cleangat/daf-monitoring/data'
 
     plot = {}
     r = {}
