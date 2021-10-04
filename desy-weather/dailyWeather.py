@@ -33,7 +33,7 @@ def combinedWeather(date1):
   df_comb = df['Temp'].merge(df['PLuft'])
   df_comb = df_comb.merge(df['relF'])
   
-  df_comb.to_csv('/home/walsh/data/desy-weather/krykWeather.csv', mode='a', header=False, index=False)
+  df_comb.to_csv('/home/cleangat/daf-monitoring/data/desy-weather/krykWeather.csv', mode='a', header=False, index=False)
   
   
 ##########
