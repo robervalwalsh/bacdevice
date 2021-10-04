@@ -262,13 +262,13 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     location = ['right-bottom','right-top','left-bottom','left-top','reference','outside']
     
     location.append('ds18b20_right_1')
-#    location.append('ds18b20_right_2')
+    location.append('ds18b20_right_2')
     location.append('ds18b20_right_3')
     location.append('ds18b20_right_4')
 #    location.append('pt100_3')
 #    location.append('pt100_4')
+    colors.append('red')
     colors.append('blue')
-#    colors.append('red')
     colors.append('magenta')
     colors.append('cyan')
 #    location = ['centre-bottom','right-bottom','right-middle','right-top','centre-top','left-top','left-middle','left-bottom','reference']
