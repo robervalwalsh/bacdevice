@@ -216,6 +216,7 @@ def main ( ) :
     store_path = './'
     if 'path' in cparser['storage']:
          store_path = cparser['storage']['path']
+         os.makedirs(store_path,exist_ok=True)
 
     logger.info ( "Initializing meters..." )
     for key, metermodule in sorted(METERS.items(),reverse=True) :
