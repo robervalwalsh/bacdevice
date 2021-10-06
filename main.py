@@ -52,34 +52,48 @@ import pandas as pd
 
 
 import thermorasp
-METERS = { "thermorasps": thermorasp }
+import dustmeter
+METERS = { "thermorasps": thermorasp , "dustmeters": dustmeter }
 
 def readout(meters):
     measurements = {}
+    unixtime = int(time.time())
+
     for meter in meters :
         section = meter.getSection()
         if not section in measurements:
             measurements[section] = [None]*4
         fname = meter.name
         outputvar = meter.getPresentValue ( )
-        try:
-            measurements[section][0] = datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S.%f').replace ( microsecond = 0 )
-        except ValueError as ve1:
-            try:
-                measurements[section][0] = datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S').replace ( microsecond = 0 )
-            except ValueError as ve2:
-                continue
-        if 'temp' in fname:
-            measurements[section][1] = outputvar
-        elif 'pres' in fname:
-            measurements[section][2] = outputvar
-        elif 'hum' in fname:
-            measurements[section][3] = outputvar
-        else:
-            print('Invalid measurement for ',fname)
+        if type(outputvar).__name__ == 'list':
             continue
-
-    unixtime = int(time.time())
+        if 'rasp' in fname:
+            try:
+                measurements[section][0] = datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S.%f').replace ( microsecond = 0 )
+            except ValueError as ve1:
+                try:
+                    measurements[section][0] = datetime.strptime(meter.getPresentDate ( ),'%Y-%m-%d %H:%M:%S').replace ( microsecond = 0 )
+                except ValueError as ve2:
+                    continue
+            if 'temp' in fname:
+                measurements[section][1] = outputvar
+            elif 'pres' in fname:
+                measurements[section][2] = outputvar
+            elif 'hum' in fname:
+                measurements[section][3] = outputvar
+            else:
+                print('Invalid measurement for ',fname)
+                continue
+        if 'dustmeter' in fname:
+            measurements[section][0] = datetime.strptime(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),'%Y-%m-%d %H:%M:%S').replace ( microsecond = 0 )
+            if 'small' in fname:
+                measurements[section][1] = outputvar
+            elif 'large' in fname:
+                measurements[section][2] = outputvar
+            else:
+                print('Invalid measurement for ',fname)
+                continue
+                
     return measurements
 
 def store():
@@ -99,9 +113,10 @@ def store():
             time_interval[key] += sleep_time
             continue
         time_interval[key] = sleep_time
-       
+        
 #        rasp = key.split('-')[0]
 #        sensor = key.replace('-','_')
+
         try:
             timestamp = [int(time.mktime(values[0].timetuple()))]
         except  AttributeError as att_err:
@@ -114,12 +129,17 @@ def store():
 #        measurement = {'time':[values[0]],'temperature':[values[1]],'pressure':[values[2]],'humidity':[values[3]]}
         measurement = {}
 
-        measurement['timestamp_utc'] = [values[0]]
-        if values[1]:
-            measurement['temperature'] = [values[1]]
-        if values[2] or values[3]:
-            measurement['pressure'] = [values[2]]
-            measurement['humidity'] = [values[3]]
+        if 'rasp' in key:
+            measurement['timestamp_utc'] = [values[0]]
+            if values[1]:
+                measurement['temperature'] = [values[1]]
+            if values[2] or values[3]:
+                measurement['pressure'] = [values[2]]
+                measurement['humidity'] = [values[3]]
+        if 'dust' in key:
+            measurement['timestamp_utc'] = [values[0]]
+            measurement['small'] = [values[1]]
+            measurement['large'] = [values[2]]
         
         df = pd.DataFrame(data=measurement)
         
