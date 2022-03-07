@@ -193,9 +193,9 @@ def readdata():
     sdata = {}
     sel_data = {}
     for l in location:
-        mycsv = '{0}/{1}.csv'.format(directory,sensor[l])
+        mycsv = '{0}/infrared-setup/{1}.csv'.format(directory,sensor[l])
         if l == 'outside':
-            mycsv = '/home/walsh/data/desy-weather/{0}.csv'.format(sensor[l])
+            mycsv = '{0}/desy-weather/{1}.csv'.format(directory,sensor[l])
         if not path.exists(mycsv):
             continue
         
@@ -206,7 +206,7 @@ def readdata():
             sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","temperature"),parse_dates=[0],infer_datetime_format=True,comment='#',header=0)
             
         if l == 'outside':
-            sdata[sensor[l]]['datetime'] = sdata[sensor[l]].datetime.dt.tz_localize('Europe/Berlin')
+            sdata[sensor[l]]['datetime'] = sdata[sensor[l]].datetime.dt.tz_localize('Europe/Berlin',ambiguous='infer')
         else:
             sdata[sensor[l]]['datetime'] = sdata[sensor[l]].datetime.dt.tz_localize('UTC')
         # select only every n-th row: skip rows
@@ -245,7 +245,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     # name starts with bk_script (__name__ = bk_script_<some number>)
     
     # read data from the files
-    directory = '/home/walsh/data/infrared-setup'
+    directory = '/home/cleangat/daf-monitoring/data'
 
     plot = {}
     r = {}

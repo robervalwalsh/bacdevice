@@ -16,13 +16,15 @@ minutes = 5
 deltaT = timedelta(minutes=minutes)
 ######
 
+username = os.getlogin()
+
 def combinedWeather(start,end,n):
   
   df = {}
   for pv in points:
-    cmd = f'cd /home/walsh/daf-monitoring/bacdevice/desy-weather; /usr/bin/java -jar ArchiveReader.jar -pv krykWeather:{pv}_ai -start {start} -end {end} -method AVERAGE -count {n} -output txt -path /tmp ; cd -'
+    cmd = f'cd /home/{username}/daf-monitoring/bacdevice/desy-weather; /usr/bin/java -jar ArchiveReader.jar -pv krykWeather:{pv}_ai -start {start} -end {end} -method AVERAGE -count {n} -output txt -path /tmp ; cd -'
     os.system(cmd)
-    name = '/tmp/krykWeather_'+pv+'_ai.txt'
+    name = f'/tmp/krykWeather_'+pv+'_ai.txt'
     # remove first and last lines
     os.system(f"sed -i '1d' {name}")
     os.system(f"sed -i '$d' {name}")
@@ -33,12 +35,12 @@ def combinedWeather(start,end,n):
   
 #  print(df_comb)
   
-  df_comb.to_csv('/home/walsh/data/desy-weather/krykWeather.csv', mode='a', header=False, index=False)
+  df_comb.to_csv(f'/home/{username}/daf-monitoring/data/desy-weather/krykWeather.csv', mode='a', header=False, index=False)
   
   
 ##########
 
-df = pd.read_csv('/home/walsh/data/desy-weather/krykWeather.csv',names=("datetime","temperature","pressure","humidity"),parse_dates=[0],infer_datetime_format=True)
+df = pd.read_csv(f'/home/{username}/daf-monitoring/data/desy-weather/krykWeather.csv',names=("datetime","temperature","pressure","humidity"),parse_dates=[0],infer_datetime_format=True)
 
 dt1 = df.iloc[-1]['datetime']
 dt2 = datetime.today()
