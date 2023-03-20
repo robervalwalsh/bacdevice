@@ -132,7 +132,7 @@ def readdata():
     sdata = {}
     sel_data = {}
     for l in location:
-        mycsv = '{0}/dustmeter_25c/{1}.csv'.format(directory,sensor[l])
+        mycsv = '{0}/{1}.csv'.format(directory,sensor[l])
         if not path.exists(mycsv):
             continue
         sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","small","large"),parse_dates=[0],infer_datetime_format=True,comment='#',header=0)
@@ -169,7 +169,8 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     # name starts with bk_script (__name__ = bk_script_<some number>)
     
     # read data from the files
-    directory = '/home/cleangat/daf-monitoring/data'
+    directory = '/var/www/html/daf-monitor/dustmeters'
+#    directory = '/home/cleangat/daf-monitoring/data'
 #    directory = '/home/walsh/data'
 
     plot = {}
@@ -235,8 +236,8 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
         p.legend.orientation = "vertical"
         p.legend.click_policy="hide"
         
-    plot['small'].yaxis.axis_label = "Small particles (a.u.)"
-    plot['large'].yaxis.axis_label = "Large particles (a.u.)"
+    plot['small'].yaxis.axis_label = "Small particles (counts/m\u00b3)"
+    plot['large'].yaxis.axis_label = "Large particles (counts/m\u00b3)"
     
 
 #    sys.exit()

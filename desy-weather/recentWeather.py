@@ -42,6 +42,7 @@ def combinedWeather(start,end,n):
 
 df = pd.read_csv(f'/home/{username}/daf-monitoring/data/desy-weather/krykWeather.csv',names=("datetime","temperature","pressure","humidity"),parse_dates=[0],infer_datetime_format=True)
 
+
 dt1 = df.iloc[-1]['datetime']
 dt2 = datetime.today()
 npoints = int((dt2-dt1).seconds/deltaT.seconds)+1
@@ -49,4 +50,6 @@ npoints = int((dt2-dt1).seconds/deltaT.seconds)+1
 start = dt1.strftime('%Y-%m-%d-%H-%M-%S')
 end = (dt1+timedelta(minutes=minutes*npoints)).strftime('%Y-%m-%d-%H-%M-%S')
 
-combinedWeather(start,end,npoints)
+
+if npoints > 0:  # prevent possible wrong date in the database; TODO: check summer time!
+   combinedWeather(start,end,npoints)
