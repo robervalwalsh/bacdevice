@@ -11,6 +11,8 @@ import pathlib
 import os
 from os import path
 
+home_path = os.environ.get('HOME')
+
 pwd = str(pathlib.Path().absolute())
 wd = pwd
 proj_name = pwd.split('/')[-1]
@@ -73,9 +75,11 @@ def get_history():
     sel_data = {}
     ## FIXME: force date range, if nearest too old then "remove" data 
     for l in location:
-        last_idx = alldata[l].index.get_loc(fts, method='nearest')
+        # last_idx = alldata[l].index.get_loc(fts, method='nearest')
+        last_idx = alldata[l].index.get_indexer([fts], method='nearest')[0]
         last_ts = alldata[l].iloc[last_idx].name
-        first_idx = alldata[l].index.get_loc(its, method='nearest')
+        # first_idx = alldata[l].index.get_loc(its, method='nearest')
+        first_idx = alldata[l].index.get_indexer([its], method='nearest')[0]
         first_ts = alldata[l].iloc[first_idx].name
         for key in observables:
             r[l][key].visible = True
@@ -102,27 +106,45 @@ def get_history():
             dsline[l][key].data = {'x':sdates, 'y':list(sel_data[l][key])}
             dsline[l][key].trigger('data', dsline[l][key].data, dsline[l][key].data)
 
+# def initialdata():
+#     # FIXME: check if alldata is available, otherwise readdata
+#     sel_data = {}
+#     now_ts = int(time.time())
+#     midnight_ts = int(time.mktime(datetime(datetime.today().year,datetime.today().month,datetime.today().day,tzinfo=timezone.utc).timetuple()))
+#     for l in location:
+#         # last_idx = alldata[l].index.get_loc(now_ts, method='nearest')
+#         last_idx = alldata[l].index.get_indexer([now_ts], method='nearest')[0]
+#         last_ts = alldata[l].iloc[last_idx].name
+#         # get the nearest index to midnight
+#         # first_idx = alldata[l].index.get_loc(midnight_ts, method='nearest')
+#         first_idx = alldata[l].index.get_indexer([midnight_ts], method='nearest')
+#         # get the first timestamp
+#         first_ts = alldata[l].iloc[first_idx].name
+# #        if last_ts <= midnight_ts or l == 'left-top':
+#         if last_ts <= midnight_ts:
+#             sel_data[l] = alldata[l][0:0]
+#         else:
+#             # get selected data
+#             sel_data[l] = alldata[l].loc[first_ts:last_ts]
+            
+#     return sel_data
+        
+        
 def initialdata():
     # FIXME: check if alldata is available, otherwise readdata
     sel_data = {}
     now_ts = int(time.time())
-    midnight_ts = int(time.mktime(datetime(datetime.today().year,datetime.today().month,datetime.today().day,tzinfo=timezone.utc).timetuple()))
+    midnight_ts = int(time.mktime(datetime(datetime.today().year, datetime.today().month, datetime.today().day, tzinfo=timezone.utc).timetuple()))
     for l in location:
-        last_idx = alldata[l].index.get_loc(now_ts, method='nearest')
-        last_ts = alldata[l].iloc[last_idx].name
-        # get the nearest index to midnight
-        first_idx = alldata[l].index.get_loc(midnight_ts, method='nearest')
-        # get the first timestamp
-        first_ts = alldata[l].iloc[first_idx].name
-#        if last_ts <= midnight_ts or l == 'left-top':
+        last_idx = alldata[l].index.get_indexer([now_ts], method='nearest')[0]
+        last_ts = alldata[l].index[last_idx]
+        first_idx = alldata[l].index.get_indexer([midnight_ts], method='nearest')[0]
+        first_ts = alldata[l].index[first_idx]
         if last_ts <= midnight_ts:
             sel_data[l] = alldata[l][0:0]
         else:
-            # get selected data
             sel_data[l] = alldata[l].loc[first_ts:last_ts]
-            
-    return sel_data
-        
+    return sel_data        
 
 @linear()
 def update(step):
@@ -135,8 +157,11 @@ def readdata():
         mycsv = '{0}/{1}.csv'.format(directory,sensor[l])
         if not path.exists(mycsv):
             continue
-        sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","small","large"),parse_dates=[0],infer_datetime_format=True,comment='#',header=0)
-        sdata[sensor[l]]['datetime'] = sdata[sensor[l]].datetime.dt.tz_localize('UTC')
+        sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","small","large"),parse_dates=[0],comment='#',header=0)
+        # sdata[sensor[l]]['datetime'] = sdata[sensor[l]].datetime.dt.tz_localize('UTC')
+        sdata[sensor[l]]['datetime'] = pd.to_datetime(sdata[sensor[l]]['datetime'],errors='coerce').dt.tz_localize('UTC')
+
+        
         
         # select only every n-th row: skip rows
         skip = 1
@@ -165,12 +190,12 @@ if __name__ == "__main__" :
     main ()
     
 elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
-    date_format = ['%d %b %Y %H:%M:%S']
+    date_format = '%d %b %Y %H:%M:%S'
     # name starts with bk_script (__name__ = bk_script_<some number>)
     
     # read data from the files
-    directory = '/var/www/html/daf-monitor/dustmeters'
-#    directory = '/home/cleangat/daf-monitoring/data'
+#    directory = '/var/www/html/daf-monitor/dustmeters'
+    directory = f'{home_path}/daf-monitoring/data/dustmeter_25c'
 #    directory = '/home/walsh/data'
 
     plot = {}
@@ -198,8 +223,8 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     alldata = readdata()
     inidata = initialdata()
         
-    plot[observables[0]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",toolbar_location="above")
-    plot[observables[1]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
+    plot[observables[0]] = figure(width=500, height=500,x_axis_type="datetime",toolbar_location="above")
+    plot[observables[1]] = figure(width=500, height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
 
     for key, p in plot.items():
     
@@ -260,11 +285,18 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     pre_temp_mid = PreText(text="",width=400, height=20)
     pre_temp_bot = PreText(text="",width=400, height=20)
     
-    h_space = PreText(text="",width=50, height=1)
-    v_space = PreText(text="",width=1, height=50)
+    h_space = [PreText(text="", width=50, height=1) for _ in range(2)]
+    v_space = [PreText(text="", width=1, height=50) for _ in range(2)]
+
     
-    
-    curdoc().add_root(column(row(h_space,pre_head),row(h_space, date_picker_i, date_picker_f), row(h_space, hist_button),v_space,row(h_space,plot['small'],h_space,plot['large']), v_space))
+    curdoc().add_root(
+        column(
+            row(h_space[0],pre_head),
+            row(h_space[0], date_picker_i, date_picker_f),
+            row(h_space[0], hist_button),
+            v_space[0],
+            row(h_space[0],plot['small'],h_space[1],plot['large']),
+            v_space[1]))
     
 #    readdata()
 #    main()
