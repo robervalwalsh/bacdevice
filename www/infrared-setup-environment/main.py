@@ -11,6 +11,8 @@ import pathlib
 import os
 from os import path
 
+home_path = os.environ.get('HOME')
+
 pwd = str(pathlib.Path().absolute())
 wd = pwd
 proj_name = pwd.split('/')[-1]
@@ -98,9 +100,11 @@ def get_history():
     for l in location:
         if 'pt100' in l or 'ds18b20' in l:
             continue
-        last_idx = alldata[l].index.get_loc(fts, method='nearest')
+        # last_idx = alldata[l].index.get_loc(fts, method='nearest')
+        last_idx = alldata[l].index.get_indexer([fts], method='nearest')[0]
         last_ts = alldata[l].iloc[last_idx].name
-        first_idx = alldata[l].index.get_loc(its, method='nearest')
+        # first_idx = alldata[l].index.get_loc(its, method='nearest')
+        first_idx = alldata[l].index.get_indexer([its], method='nearest')[0]
         first_ts = alldata[l].iloc[first_idx].name
         
         for key in observables:
@@ -133,9 +137,9 @@ def get_history():
     for l in location:
         if not 'pt100' in l and not 'ds18b20' in l:
             continue
-        last_idx = alldata[l].index.get_loc(fts, method='nearest')
+        last_idx = alldata[l].index.get_indexer([fts], method='nearest')[0]
         last_ts = alldata[l].iloc[last_idx].name
-        first_idx = alldata[l].index.get_loc(its, method='nearest')
+        first_idx = alldata[l].index.get_indexer([its], method='nearest')[0]
         first_ts = alldata[l].iloc[first_idx].name
         
         r_temp[l]['temperature'].visible = True
@@ -163,27 +167,42 @@ def get_history():
     
     
 
+# def initialdata():
+#     # FIXME: check if alldata is available, otherwise readdata
+#     sel_data = {}
+#     now_ts = int(time.time())
+#     midnight_ts = int(time.mktime(datetime(datetime.today().year,datetime.today().month,datetime.today().day,tzinfo=timezone.utc).timetuple()))
+#     for l in location:
+#         last_idx = alldata[l].index.get_loc(now_ts, method='nearest')
+#         last_ts = alldata[l].iloc[last_idx].name
+#         # get the nearest index to midnight
+#         first_idx = alldata[l].index.get_loc(midnight_ts, method='nearest')
+#         # get the first timestamp
+#         first_ts = alldata[l].iloc[first_idx].name
+# #        if last_ts <= midnight_ts or l == 'left-top':
+#         if last_ts <= midnight_ts:
+#             sel_data[l] = alldata[l][0:0]
+#         else:
+#             # get selected data
+#             sel_data[l] = alldata[l].loc[first_ts:last_ts]
+            
+#     return sel_data
+        
 def initialdata():
     # FIXME: check if alldata is available, otherwise readdata
     sel_data = {}
     now_ts = int(time.time())
-    midnight_ts = int(time.mktime(datetime(datetime.today().year,datetime.today().month,datetime.today().day,tzinfo=timezone.utc).timetuple()))
+    midnight_ts = int(time.mktime(datetime(datetime.today().year, datetime.today().month, datetime.today().day, tzinfo=timezone.utc).timetuple()))
     for l in location:
-        last_idx = alldata[l].index.get_loc(now_ts, method='nearest')
-        last_ts = alldata[l].iloc[last_idx].name
-        # get the nearest index to midnight
-        first_idx = alldata[l].index.get_loc(midnight_ts, method='nearest')
-        # get the first timestamp
-        first_ts = alldata[l].iloc[first_idx].name
-#        if last_ts <= midnight_ts or l == 'left-top':
+        last_idx = alldata[l].index.get_indexer([now_ts], method='nearest')[0]
+        last_ts = alldata[l].index[last_idx]
+        first_idx = alldata[l].index.get_indexer([midnight_ts], method='nearest')[0]
+        first_ts = alldata[l].index[first_idx]
         if last_ts <= midnight_ts:
             sel_data[l] = alldata[l][0:0]
         else:
-            # get selected data
             sel_data[l] = alldata[l].loc[first_ts:last_ts]
-            
-    return sel_data
-        
+    return sel_data          
 
 @linear()
 def update(step):
@@ -201,14 +220,16 @@ def readdata():
         
         
         if not 'pt100' in sensor[l] and not 'ds18b20' in sensor[l]:
-            sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","temperature","pressure","humidity"),parse_dates=[0],infer_datetime_format=True,comment='#',header=0)
+            sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","temperature","pressure","humidity"),parse_dates=[0],comment='#',header=0)
         else:
-            sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","temperature"),parse_dates=[0],infer_datetime_format=True,comment='#',header=0)
+            sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","temperature"),parse_dates=[0],comment='#',header=0)
             
         if l == 'outside':
-            sdata[sensor[l]]['datetime'] = sdata[sensor[l]].datetime.dt.tz_localize('Europe/Berlin',ambiguous='infer')
+            # sdata[sensor[l]]['datetime'] = sdata[sensor[l]].datetime.dt.tz_localize('Europe/Berlin',ambiguous='infer')
+            sdata[sensor[l]]['datetime'] = pd.to_datetime(sdata[sensor[l]]['datetime'],errors='coerce').dt.tz_localize('Europe/Berlin',ambiguous='infer')
         else:
-            sdata[sensor[l]]['datetime'] = sdata[sensor[l]].datetime.dt.tz_localize('UTC')
+            # sdata[sensor[l]]['datetime'] = sdata[sensor[l]].datetime.dt.tz_localize('UTC')
+            sdata[sensor[l]]['datetime'] = pd.to_datetime(sdata[sensor[l]]['datetime'],errors='coerce').dt.tz_localize('UTC')
         # select only every n-th row: skip rows
         skip = 1
         if l == 'outside':
@@ -241,11 +262,11 @@ if __name__ == "__main__" :
     main ()
     
 elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
-    date_format = ['%d %b %Y %H:%M:%S']
+    date_format = '%d %b %Y %H:%M:%S'
     # name starts with bk_script (__name__ = bk_script_<some number>)
     
     # read data from the files
-    directory = '/home/cleangat/daf-monitoring/data'
+    directory = f'{home_path}/daf-monitoring/data'
 
     plot = {}
     r = {}
@@ -294,10 +315,10 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     alldata = readdata()
     inidata = initialdata()
         
-    plot[observables[0]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",toolbar_location="above")
-    plot[observables[1]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
-    plot[observables[2]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
-    plot[observables[3]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
+    plot[observables[0]] = figure(width=500, height=500,x_axis_type="datetime",toolbar_location="above")
+    plot[observables[1]] = figure(width=500, height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
+    plot[observables[2]] = figure(width=500, height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
+    plot[observables[3]] = figure(width=500, height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
 
     for key, p in plot.items():
     
@@ -344,7 +365,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     ## pt100 plot
 
     plot_temp = {}
-    plot_temp['temperature'] =   figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot['dewpoint'].x_range,toolbar_location="above")
+    plot_temp['temperature'] =   figure(width=500, height=500,x_axis_type="datetime",x_range=plot['dewpoint'].x_range,toolbar_location="above")
     plot_temp['temperature'].xaxis.formatter=DatetimeTickFormatter(
                microseconds=date_format,
                milliseconds=date_format,
@@ -418,8 +439,23 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     h_space = PreText(text="",width=50, height=1)
     v_space = PreText(text="",width=1, height=50)
     
+    h_space = [PreText(text="", width=50, height=1) for _ in range(2)]
+    v_space = [PreText(text="", width=1, height=50) for _ in range(4)]
     
-    curdoc().add_root(column(row(h_space,pre_head),row(h_space, date_picker_i, date_picker_f), row(h_space, hist_button),v_space,row(h_space,plot['dewpoint'],h_space,plot_temp['temperature']), v_space,row(h_space,plot['temperature'],h_space,plot['humidity']), v_space,row(h_space,plot['pressure'],h_space), v_space))
+    curdoc().add_root(
+        column(
+            row(h_space[0],pre_head),
+            row(h_space[0], date_picker_i, date_picker_f),
+            row(h_space[0], hist_button),
+            v_space[0],
+            row(h_space[0],plot['dewpoint'],h_space[1],plot_temp['temperature']),
+            v_space[1],
+            row(h_space[0],plot['temperature'],h_space[1],plot['humidity']),
+            v_space[2],
+            row(h_space[0],plot['pressure'],h_space[1]),
+            v_space[3]
+        )
+    )
     
 #    readdata()
 #    main()
