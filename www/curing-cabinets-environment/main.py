@@ -170,9 +170,9 @@ def readdata():
         
         
         if not 'pt100' in sensor[l] and not 'ds18b20' in sensor[l]:
-            sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","temperature","pressure","humidity"),parse_dates=[0],infer_datetime_format=True,comment='#',header=0)
+            sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","temperature","pressure","humidity"),parse_dates=[0],comment='#',header=0)
         else:
-            sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","temperature"),parse_dates=[0],infer_datetime_format=True,comment='#',header=0)
+            sdata[sensor[l]] = pd.read_csv(mycsv,names=("datetime","temperature"),parse_dates=[0],comment='#',header=0)
             
         if l == 'outside':
             sdata[sensor[l]]['datetime'] = sdata[sensor[l]].datetime.dt.tz_localize('Europe/Berlin',ambiguous='infer')
@@ -262,10 +262,10 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     alldata = readdata()
     inidata = initialdata()
         
-    plot[observables[0]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",toolbar_location="above")
-    plot[observables[1]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
-    plot[observables[2]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
-    plot[observables[3]] = figure(plot_width=500, plot_height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
+    plot[observables[0]] = figure(width=500, height=500,x_axis_type="datetime",toolbar_location="above")
+    plot[observables[1]] = figure(width=500, height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
+    plot[observables[2]] = figure(width=500, height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
+    plot[observables[3]] = figure(width=500, height=500,x_axis_type="datetime",x_range=plot[observables[0]].x_range,toolbar_location="above")
 
     for key, p in plot.items():
     
