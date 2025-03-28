@@ -189,7 +189,7 @@ class DataThread ( threading.Thread ) :
 
 
 
-def main ( ) :
+def main ( ) :    
     global mymeters
     
     global update_interval
@@ -204,6 +204,8 @@ def main ( ) :
     time_interval = {}
     sleep_time = 10
     update_interval = {}
+    
+    home_path = os.environ.get('HOME')
     
 #    server_config = 'server.cfg'
     if len(sys.argv) > 1:
@@ -233,9 +235,9 @@ def main ( ) :
     ai_objs = []
     idx = 1
 
-    store_path = './'
+    store_path = f'{home_path}/daf-monitoring/data'
     if 'path' in cparser['storage']:
-         store_path = cparser['storage']['path']
+         store_path = f"{store_path}/{cparser['storage']['path']}"
          os.makedirs(store_path,exist_ok=True)
 
     logger.info ( "Initializing meters..." )

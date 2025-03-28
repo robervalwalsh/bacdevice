@@ -48,9 +48,10 @@ if args.date:
   date1 = args.date
 
 
-date1 = '2020-12-22'
+date1 = '2022-01-02'
 
 last_date = date.isoformat(date.today()-timedelta(days=1))
+#last_date = date.isoformat(date.today())
 
 while date1 != last_date:
   combinedWeather(date1)
