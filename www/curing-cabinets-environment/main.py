@@ -289,8 +289,8 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
                 sdates = [datetime.fromtimestamp(ts) for ts in list(inidata[l].index)]
             except KeyError as e:
                 continue
-            rline[l][key] = p.line(sdates, list(inidata[l][key]), color=color[l], line_width=2,legend_label=l)
-            r[l][key] = p.circle(sdates, list(inidata[l][key]), fill_color=color[l], line_color=color[l], size=3,legend_label=l)
+            rline[l][key] = p.line(sdates, list(inidata[l][key]), color=color[l], line_width=2,legend_label="sensor "+l)
+            r[l][key] = p.circle(sdates, list(inidata[l][key]), fill_color=color[l], line_color=color[l], size=3,legend_label="sensor "+l)
             ds[l][key] = r[l][key].data_source
             dsline[l][key] = rline[l][key].data_source
             if len(ds[l][key].data['x']) < 1:
