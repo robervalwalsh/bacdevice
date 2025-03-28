@@ -189,6 +189,8 @@ def readdata():
         # reindex
         sdata[sensor[l]] = sdata[sensor[l]].sort_index()
         
+        par_cal_rh_1,par_cal_rh_0 = 1.,0.
+        par_cal_t_1,par_cal_t_0   = 1.,0.
         # apply calibrations
         if l == 'top':
             par_cal_rh_1,par_cal_rh_0 = 0.99,2.51
