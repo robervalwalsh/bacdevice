@@ -332,7 +332,7 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     v_space = PreText(text="",width=1, height=50)
     
     
-    curdoc().add_root(column(row(h_space,pre_head),row(h_space, date_picker_i, date_picker_f), row(h_space, hist_button),v_space,row(h_space,plot['dewpoint'],h_space,plot['temperature']), v_space,row(h_space,plot['humidity'],h_space,plot['pressure']), v_space,row(h_space,plot['pressure'],h_space), v_space))
+    curdoc().add_root(column(row(h_space,pre_head),row(h_space, date_picker_i, date_picker_f), row(h_space, hist_button),v_space,row(h_space,plot['dewpoint'],h_space,plot['temperature']), v_space,row(h_space,plot['humidity'],h_space,plot['pressure']), v_space))
     
 #    readdata()
 #    main()
