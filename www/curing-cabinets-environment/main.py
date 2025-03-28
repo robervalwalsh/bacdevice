@@ -237,8 +237,8 @@ elif __name__.startswith('bokeh_app') or __name__.startswith('bk_script'):
     color = {}
     sensor = {}
     # FIX ME! Need more colors
-    colors = ['blue','red','green','magenta']
-    location = ['top','middle','bottom','extra']
+    colors = ['blue','red']
+    location = ['1','2']
     
     sensors = []
     for l in location:
