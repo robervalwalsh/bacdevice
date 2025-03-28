@@ -96,9 +96,11 @@ def get_history():
     sel_data = {}
     ## FIXME: force date range, if nearest too old then "remove" data 
     for l in location:
-        last_idx = alldata[l].index.get_loc(fts, method='nearest')
+        # last_idx = alldata[l].index.get_loc(fts, method='nearest')
+        last_idx = alldata[l].index.get_indexer([fts], method='nearest')[0]
         last_ts = alldata[l].iloc[last_idx].name
-        first_idx = alldata[l].index.get_loc(its, method='nearest')
+        # first_idx = alldata[l].index.get_loc(its, method='nearest')
+        first_idx = alldata[l].index.get_indexer([its], method='nearest')[0]
         first_ts = alldata[l].iloc[first_idx].name
         
         for key in observables:
@@ -134,10 +136,12 @@ def initialdata():
     now_ts = int(time.time())
     midnight_ts = int(time.mktime(datetime(datetime.today().year,datetime.today().month,datetime.today().day,tzinfo=timezone.utc).timetuple()))
     for l in location:
-        last_idx = alldata[l].index.get_loc(now_ts, method='nearest')
+        # last_idx = alldata[l].index.get_loc(now_ts, method='nearest')
+        last_idx = alldata[l].index.get_indexer([now_ts], method='nearest')[0]
         last_ts = alldata[l].iloc[last_idx].name
         # get the nearest index to midnight
-        first_idx = alldata[l].index.get_loc(midnight_ts, method='nearest')
+        # first_idx = alldata[l].index.get_loc(midnight_ts, method='nearest')
+        first_idx = alldata[l].index.get_indexer([midnight_ts], method='nearest')[0]
         # get the first timestamp
         first_ts = alldata[l].iloc[first_idx].name
 #        if last_ts <= midnight_ts or l == 'left-top':
