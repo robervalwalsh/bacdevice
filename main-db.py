@@ -180,14 +180,6 @@ def store():
 #        measurement = {'time':[values[0]],'temperature':[values[1]],'pressure':[values[2]],'humidity':[values[3]]}
         measurement = {}
         
-        
-        # Use default dictionary structure
-        dict_structure = {
-            "measurement": "h2o_feet",
-            "tags": {"location": "coyote_creek"},
-            "fields": {"water_level": 1.0},
-            "time": 1
-        }
 
         
         db_structure = {} 
