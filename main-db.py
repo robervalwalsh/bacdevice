@@ -154,7 +154,6 @@ def store():
     global keyword
     global measurement_type
     
-#    time.sleep(10)
     measurements = readout(mymeters)
     if measurements == {}:
         return
@@ -164,10 +163,6 @@ def store():
             time_interval[key] += sleep_time
             continue
         time_interval[key] = sleep_time
-        
-#        rasp = key.split('-')[0]
-#        sensor = key.replace('-','_')
-
         try:
             timestamp = [int(time.mktime(values[0].timetuple()))]
         except  AttributeError as att_err:
@@ -177,19 +172,16 @@ def store():
         else:
             prev_timestamp[key] = timestamp
             
-#        measurement = {'time':[values[0]],'temperature':[values[1]],'pressure':[values[2]],'humidity':[values[3]]}
         measurement = {}
-        
-
-        
         db_structure = {} 
         measurement['timestamp_utc'] = [values[0]]
         meter_timestamp = int(measurement['timestamp_utc'][0].replace(tzinfo=pytz.UTC).timestamp())
         if 'rasp' in key:
-            # measurement['timestamp_utc'] = [values[0]]
-            # meter_timestamp = int(measurement['timestamp_utc'][0].replace(tzinfo=pytz.UTC).timestamp())
-            if values[1]:
+            if values[1] is not None:
                 measurement['temperature'] = [values[1]]
+            if 'temperature' not in measurement:
+                print(f"Skipping measurement for key '{key}' — no temperature data")
+                continue
             if values[2] is not None and values[3] is not None:
                 measurement['pressure'] = [values[2]]
                 measurement['humidity'] = [values[3]]
