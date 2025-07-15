@@ -190,7 +190,7 @@ def store():
             # meter_timestamp = int(measurement['timestamp_utc'][0].replace(tzinfo=pytz.UTC).timestamp())
             if values[1]:
                 measurement['temperature'] = [values[1]]
-            if values[2] and values[3]:
+            if values[2] is not None and values[3] is not None:
                 measurement['pressure'] = [values[2]]
                 measurement['humidity'] = [values[3]]
                 dew_point_value = dew_point(measurement['temperature'][0],measurement['humidity'][0])
@@ -223,7 +223,7 @@ def store():
                            "large_particles": measurement['large'][0]},
                 "time": meter_timestamp
             }            
-           
+        
         point = Point.from_dict(db_structure, WritePrecision.S)
         
         df = pd.DataFrame(data=measurement)
