@@ -101,16 +101,28 @@ class TermoRasp(threading.Thread):
     def getReadings(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(self.SOCKET_TIMEOUT)
-        if s.connect_ex((self.host, self.port)) != 0:
+        try:
+            if s.connect_ex((self.host, self.port)) != 0:
+                return None
+            data = b""
+            new_data_len = 1
+            while new_data_len != 0:
+                new_data = s.recv(64)
+                new_data_len = len(new_data)
+                data += new_data
+            s.close()
+            return data.decode("utf-8")
+        except socket.gaierror as e:
+            logger.error("Socket error connecting to {}:{} - {}".format(self.host, self.port, e))
             return None
-        data = b""
-        new_data_len = 1
-        while new_data_len != 0:
-            new_data = s.recv(64)
-            new_data_len = len(new_data)
-            data += new_data
-        s.close()
-        return data.decode("utf-8")
+        except Exception as e:
+            logger.error("Unexpected error in getReadings: {}".format(e))
+            return None
+        finally:
+            try:
+                s.close()
+            except Exception:
+                pass
 
     def _parseTimestamp(self, date_str):
         if re.match("\\d+-\\d+-\\d+T\\d+:\\d+:\\d+\\.\\d+", date_str):
